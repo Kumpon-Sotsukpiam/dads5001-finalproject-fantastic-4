@@ -68,16 +68,19 @@ def inject_css():
         text-transform: uppercase;
     }
 
-    /* ── Page title ── */
-    h1 {
+    /* ── Page title — only target Streamlit's heading elements, not raw HTML ── */
+    [data-testid="stHeadingWithActionElements"] h1,
+    .stMarkdown h1 {
         color: #1B3A6B !important;
         font-weight: 700 !important;
         border-bottom: 3px solid #F5A623;
         padding-bottom: 0.4rem;
         margin-bottom: 0.2rem;
     }
-    h2 { color: #1B3A6B !important; font-weight: 600 !important; }
-    h3 { color: #2E6CB8 !important; font-weight: 600 !important; }
+    [data-testid="stHeadingWithActionElements"] h2,
+    .stMarkdown h2 { color: #1B3A6B !important; font-weight: 600 !important; }
+    [data-testid="stHeadingWithActionElements"] h3,
+    .stMarkdown h3 { color: #2E6CB8 !important; font-weight: 600 !important; }
 
     /* ── Metric cards ── */
     [data-testid="stMetric"] {

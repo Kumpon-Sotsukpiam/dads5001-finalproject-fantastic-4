@@ -36,12 +36,12 @@ st.markdown("""
     margin-bottom: 1.5rem;
     box-shadow: 0 4px 20px rgba(27,58,107,0.2);
 ">
-    <h1 style="color:#FFFFFF !important; border:none; padding:0; margin:0; font-size:2.2rem;">
+    <div style="color:#FFFFFF; font-size:2.2rem; font-weight:800; line-height:1.2; margin-bottom:0.5rem;">
         🏙️ Bangkok Complaints Analytics
-    </h1>
-    <p style="color:#B0D0F0; margin:0.5rem 0 0 0; font-size:1.05rem;">
+    </div>
+    <div style="color:#B0D0F0; font-size:1.05rem;">
         Traffy Fondue Dataset &nbsp;·&nbsp; July – December 2025 &nbsp;·&nbsp; 168,589 complaints
-    </p>
+    </div>
 </div>
 """, unsafe_allow_html=True)
 
