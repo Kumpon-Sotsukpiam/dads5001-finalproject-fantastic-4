@@ -80,14 +80,20 @@ if sel_month is not None and "month" in df.columns:
 if sel_type != "All" and "problem_type" in df.columns:
     df = df[df["problem_type"] == sel_type]
 
-# Limit points for map rendering
-df = df.head(max_pts)
+total_filtered = len(df)
 
-if df.empty:
+# Limit points for map rendering only (doesn't affect charts)
+df_map = df.head(max_pts)
+
+if df_map.empty:
     st.warning("No valid GPS coordinates in filtered data.")
     st.stop()
 
-st.metric("Showing", "{:,} complaints on map".format(len(df)))
+st.metric(
+    "Showing",
+    "{:,} / {:,} complaints".format(len(df_map), total_filtered),
+    help="Map shows up to {:,} points. Adjust slider to show more.".format(max_pts),
+)
 
 # ── Color map by state ────────────────────────────────────────────────────────
 COLOR_MAP = {
@@ -103,14 +109,14 @@ def get_color(state):
     return COLOR_MAP.get(state, DEFAULT_COLOR)
 
 
-df["color"] = df["state_en"].apply(get_color)
+df_map["color"] = df_map["state_en"].apply(get_color)
 
 # ── pydeck map ────────────────────────────────────────────────────────────────
-df["comment_short"] = df["comment"].fillna("").astype(str).str[:150]
+df_map["comment_short"] = df_map["comment"].fillna("").astype(str).str[:150]
 
 layer = pdk.Layer(
     "ScatterplotLayer",
-    data=df,
+    data=df_map,
     get_position=["longitude", "latitude"],
     get_color="color",
     get_radius=80,
@@ -161,3 +167,11 @@ with col2:
         )
         fig2.update_layout(coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
+
+if total_filtered > max_pts:
+    st.info(
+        "Map shows {:,} of {:,} matching points. "
+        "Increase 'Max points on map' in the sidebar to see more.".format(
+            len(df_map), total_filtered
+        )
+    )

@@ -2,10 +2,10 @@
 pages/3_Explorer.py
 --------------------
 Raw data explorer — filter with cascading dropdowns + DuckDB.
-- Default: show ALL records
-- Cascading filters: District → Problem Type → Status
-  Each filter narrows the options of the next filter.
-Source: MongoDB sample (cached).
+- Default: show ALL records (month 7-12, no other filters)
+- Cascading filters: Month → District → Problem Type → Status
+- "Matching records" shows only filtered count, not total
+Source: MongoDB (all records, cached).
 """
 
 import streamlit as st
@@ -18,7 +18,7 @@ st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 st.title("🔍 Data Explorer")
 st.caption("Source: MongoDB · In-memory DuckDB filtering · All records")
 
-# ── Load data ─────────────────────────────────────────────────────────────────
+# ── Load ALL data (no limit) ──────────────────────────────────────────────────
 with st.spinner("Fetching records from MongoDB ..."):
     try:
         df = get_mongo_sample()
@@ -43,19 +43,13 @@ for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
 with st.sidebar:
     st.header("Filters")
 
-    # Month range (applies first, narrows everything else)
-    month_min = int(df["month"].min()) if df["month"].notna().any() else 7
-    month_max = int(df["month"].max()) if df["month"].notna().any() else 12
-    month_min = max(month_min, 7)
-    month_max = min(month_max, 12)
-    if month_min > month_max:
-        month_min, month_max = 7, 12
-    month_range = st.slider("Month range", 7, 12, (month_min, month_max))
+    # Month range — default always 7-12 (full range)
+    month_range = st.slider("Month range", 7, 12, (7, 12))
 
-    # Dataset after month filter
+    # Dataset after month filter (used to build downstream options)
     df_after_month = df[df["month"].between(month_range[0], month_range[1])]
 
-    # Filter 1: District — options from full (month-filtered) dataset
+    # Filter 1: District — options from month-filtered dataset
     all_districts = sorted(df_after_month["district"].dropna().unique().tolist())
     sel_districts = st.multiselect(
         "District",
@@ -64,13 +58,13 @@ with st.sidebar:
         placeholder="All districts",
     )
 
-    # Dataset after month + district filter
+    # Dataset after month + district
     if sel_districts:
         df_after_district = df_after_month[df_after_month["district"].isin(sel_districts)]
     else:
         df_after_district = df_after_month
 
-    # Filter 2: Problem Type — only types available in selected districts
+    # Filter 2: Problem Type — only types in selected districts
     available_types = sorted(df_after_district["problem_type"].dropna().unique().tolist())
     sel_types = st.multiselect(
         "Problem Type",
@@ -79,13 +73,13 @@ with st.sidebar:
         placeholder="All types",
     )
 
-    # Dataset after month + district + type filter
+    # Dataset after month + district + type
     if sel_types:
         df_after_type = df_after_district[df_after_district["problem_type"].isin(sel_types)]
     else:
         df_after_type = df_after_district
 
-    # Filter 3: Status — only statuses available in selected districts + types
+    # Filter 3: Status — only statuses in selected district + type
     available_states = sorted(df_after_type["state_en"].dropna().unique().tolist())
     sel_states = st.multiselect(
         "Status",
@@ -126,10 +120,11 @@ try:
     con.close()
 except Exception as e:
     st.error("Filter error: {}".format(e))
-    filtered = df.copy()
+    filtered = df_after_month.copy()
 
-# ── Summary ───────────────────────────────────────────────────────────────────
-st.metric("Matching records", "{:,} / {:,}".format(len(filtered), len(df)))
+# ── Summary — show filtered count only ───────────────────────────────────────
+total_in_range = len(df_after_month)
+st.metric("Matching records", "{:,} / {:,}".format(len(filtered), total_in_range))
 
 col1, col2 = st.columns(2)
 
