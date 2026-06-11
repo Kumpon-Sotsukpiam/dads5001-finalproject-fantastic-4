@@ -129,17 +129,31 @@ def inject_css():
         margin: 0.8rem 0 !important;
     }
 
-    /* ── Toggle ── */
-    [data-testid="stToggle"] {
+    /* ── Toggle in sidebar ── */
+    [data-testid="stSidebar"] [data-testid="stToggle"] {
         background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.15);
+        border: 1px solid rgba(255,255,255,0.2);
         border-radius: 10px;
         padding: 0.5rem 0.8rem;
     }
-    [data-testid="stToggle"] p {
+    [data-testid="stSidebar"] [data-testid="stToggle"] p {
         color: #FFFFFF !important;
         font-weight: 600 !important;
         font-size: 0.88rem !important;
+    }
+
+    /* ── Toggle in main content ── */
+    .main [data-testid="stToggle"] {
+        background: #FFFFFF;
+        border: 1.5px solid #D6E4F0;
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
+        box-shadow: 0 1px 4px rgba(27,58,107,0.08);
+    }
+    .main [data-testid="stToggle"] p {
+        color: #1B3A6B !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
     }
 
     /* ── Page titles ── */
