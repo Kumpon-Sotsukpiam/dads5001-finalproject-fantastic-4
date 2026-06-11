@@ -11,8 +11,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from utils.db import get_snowflake_conn
+from utils.rag import ai_insight
+from utils.ui import ai_mode_toggle
+from utils.theme import inject_css
 
 st.set_page_config(page_title="Snowflake Analytics", page_icon="❄️", layout="wide")
+inject_css()
 st.title("❄️ Snowflake Deep-Dive Analytics")
 st.caption("Source: Snowflake warehouse · Pre-aggregated from 168,589 complaints · Traffy Fondue Jul–Dec 2025")
 
@@ -83,6 +87,8 @@ except Exception as e:
     st.stop()
 
 MONTH_MAP = {7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
+
+ai_mode_toggle()
 
 # ── Sidebar filters ───────────────────────────────────────────────────────────
 with st.sidebar:
@@ -435,3 +441,51 @@ with col_b:
         st.caption("Min. 50 tickets to qualify")
     else:
         st.info("No data.")
+
+# ── AI Insight (AI mode only) ─────────────────────────────────────────────────
+st.divider()
+if st.session_state.get("ai_mode", False):
+    st.subheader("🤖 AI Insight")
+    if st.button("✨ Analyze Snowflake performance data", use_container_width=True):
+        if not df_summary.empty and not dff.empty:
+            # Worst 3 districts by satisfaction
+            worst_sat = df_summary.nsmallest(3, "avg_satisfaction")[
+                ["district", "total_tickets", "avg_satisfaction", "avg_resolution_minutes"]
+            ].copy()
+            worst_sat["avg_resolution_hours"] = (worst_sat["avg_resolution_minutes"] / 60).round(1)
+
+            # Slowest problem types
+            slow_types = dff.groupby("problem_type").agg(
+                avg_hours=("avg_resolution_minutes", "mean"),
+                tickets=("ticket_count", "sum"),
+            ).reset_index()
+            slow_types["avg_hours"] = (slow_types["avg_hours"] / 60).round(1)
+            slow_types = slow_types[slow_types["tickets"] >= 50].nlargest(3, "avg_hours")
+
+            # Most reopened
+            reopen_types = dff.groupby("problem_type").agg(
+                reopens=("total_reopens", "sum"),
+                tickets=("ticket_count", "sum"),
+            ).reset_index()
+            reopen_types["reopen_pct"] = (reopen_types["reopens"] / reopen_types["tickets"] * 100).round(1)
+            reopen_types = reopen_types[reopen_types["tickets"] >= 50].nlargest(3, "reopen_pct")
+
+            context = (
+                "Districts with lowest satisfaction:\n{}\n\n"
+                "Slowest problem types to resolve:\n{}\n\n"
+                "Most reopened problem types:\n{}"
+            ).format(
+                worst_sat[["district", "avg_satisfaction", "avg_resolution_hours"]].to_string(index=False),
+                slow_types[["problem_type", "avg_hours", "tickets"]].to_string(index=False),
+                reopen_types[["problem_type", "reopen_pct", "tickets"]].to_string(index=False),
+            )
+            with st.spinner("Analyzing ..."):
+                insight = ai_insight(context,
+                    "Based on this Snowflake performance data for Bangkok complaints, "
+                    "identify the most critical service delivery problems. "
+                    "Which districts and problem types need urgent intervention and why?")
+            st.info(insight)
+        else:
+            st.warning("Not enough data to analyze.")
+else:
+    st.caption("💡 Enable **AI mode** on the Home page to get AI-powered performance analysis.")
