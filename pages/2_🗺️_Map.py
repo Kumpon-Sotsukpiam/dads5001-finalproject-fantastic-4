@@ -52,6 +52,7 @@ with st.sidebar:
     sel_month = st.selectbox(
         "Month (2025)",
         options=month_options,
+        index=0,
         format_func=lambda m: "All months" if m is None else month_map.get(int(m), str(m)),
     )
 
