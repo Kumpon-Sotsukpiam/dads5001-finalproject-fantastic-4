@@ -140,7 +140,7 @@ with col1:
         state_counts.columns = ["status", "count"]
         fig = px.pie(
             state_counts, values="count", names="status",
-            title="Status Distribution", height=250,
+            title="Status Distribution", height=250, template="bkk",
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -154,7 +154,7 @@ with col2:
             labels={"count": "", "type": ""},
             color="count", color_continuous_scale="Blues",
         )
-        fig2.update_layout(coloraxis_showscale=False)
+        fig2.update_layout(template="bkk", coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
 
 # ── Table ─────────────────────────────────────────────────────────────────────

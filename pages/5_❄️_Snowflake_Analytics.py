@@ -200,10 +200,10 @@ with col_l:
             rt, x="month_label", y="avg_hours",
             color="avg_hours", color_continuous_scale="Reds",
             labels={"avg_hours": "Avg Hours", "month_label": "Month"},
-            text="avg_hours", height=350,
+            text="avg_hours", template="bkk", height=350,
         )
         fig_rt.update_traces(texttemplate="%{text}h", textposition="outside")
-        fig_rt.update_layout(coloraxis_showscale=False, yaxis_title="Hours")
+        fig_rt.update_layout(template="bkk", coloraxis_showscale=False, yaxis_title="Hours")
         st.plotly_chart(fig_rt, use_container_width=True)
     else:
         st.info("No data.")
@@ -225,7 +225,7 @@ with col_r:
             height=350,
         )
         fig_rr.update_traces(line=dict(color="#EF553B", width=3), marker=dict(size=8))
-        fig_rr.update_layout(yaxis_ticksuffix="%")
+        fig_rr.update_layout(template="bkk", yaxis_ticksuffix="%")
         st.plotly_chart(fig_rr, use_container_width=True)
     else:
         st.info("No data.")
@@ -251,7 +251,7 @@ if not df_weekly.empty:
         mode="lines+markers",
         line=dict(color="#00CC96", width=2),
     ))
-    fig_wk.update_layout(
+    fig_wk.update_layout(template="bkk", 
         yaxis=dict(title="Tickets"),
         yaxis2=dict(title="Completion %", overlaying="y", side="right",
                     ticksuffix="%", range=[0, 100]),
@@ -287,10 +287,10 @@ if not dff.empty:
         zmin=1, zmax=5,
         text_auto=".2f",
         labels={"color": "Avg ⭐"},
-        aspect="auto",
+        aspect="auto", template="bkk",
         height=550,
     )
-    fig_heat.update_layout(xaxis_title="Month", yaxis_title="District")
+    fig_heat.update_layout(template="bkk", xaxis_title="Month", yaxis_title="District")
     st.plotly_chart(fig_heat, use_container_width=True)
 else:
     st.info("No data.")
@@ -409,11 +409,11 @@ with col_a:
             slow, x="avg_hours", y="problem_type", orientation="h",
             color="avg_hours", color_continuous_scale="Reds",
             text="avg_hours",
-            labels={"avg_hours": "Avg Hours", "problem_type": ""},
+            labels={"avg_hours": "Avg Hours", "problem_type": ""}, template="bkk",
             height=380,
         )
         fig_slow.update_traces(texttemplate="%{text}h", textposition="outside")
-        fig_slow.update_layout(coloraxis_showscale=False)
+        fig_slow.update_layout(template="bkk", coloraxis_showscale=False)
         st.plotly_chart(fig_slow, use_container_width=True)
         st.caption("Min. 50 tickets to qualify")
     else:
@@ -436,7 +436,7 @@ with col_b:
             height=380,
         )
         fig_reopen.update_traces(texttemplate="%{text}%", textposition="outside")
-        fig_reopen.update_layout(coloraxis_showscale=False)
+        fig_reopen.update_layout(template="bkk", coloraxis_showscale=False)
         st.plotly_chart(fig_reopen, use_container_width=True)
         st.caption("Min. 50 tickets to qualify")
     else:

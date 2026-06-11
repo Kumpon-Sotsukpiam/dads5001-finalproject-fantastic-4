@@ -1,192 +1,257 @@
 """
 utils/theme.py
 --------------
-Bangkok city theme — navy/dark blue primary, amber accent.
-Call inject_css() at the top of every page.
+Modern clean theme — light background, navy accent, white cards.
 """
 
 import streamlit as st
+import plotly.graph_objects as go
+import plotly.io as pio
 
-# Plotly colour palette (use these for charts)
+# ── Colour palette ────────────────────────────────────────────────────────────
 COLORS = {
-    "primary":    "#1B3A6B",   # navy blue
-    "secondary":  "#2E6CB8",   # mid blue
-    "accent":     "#F5A623",   # amber/gold
-    "success":    "#27AE60",   # green
-    "warning":    "#E67E22",   # orange
-    "danger":     "#C0392B",   # red
-    "light":      "#EBF2FB",   # pale blue bg
-    "text":       "#1A1A2E",   # near-black
-    "muted":      "#7F8C8D",   # grey
+    "primary":   "#1B3A6B",
+    "secondary": "#2E6CB8",
+    "accent":    "#F5A623",
+    "success":   "#27AE60",
+    "warning":   "#E67E22",
+    "danger":    "#E74C3C",
+    "light":     "#F0F4FA",
+    "muted":     "#8492A6",
+    "white":     "#FFFFFF",
 }
 
-PLOTLY_TEMPLATE = "plotly_white"
-
 CHART_COLORS = [
-    "#1B3A6B", "#2E6CB8", "#F5A623", "#27AE60",
-    "#E67E22", "#8E44AD", "#16A085", "#C0392B",
+    "#2E6CB8", "#F5A623", "#27AE60", "#E74C3C",
+    "#8E44AD", "#16A085", "#E67E22", "#1B3A6B",
 ]
+
+# ── Register custom Plotly template ──────────────────────────────────────────
+_custom_template = go.layout.Template()
+_custom_template.layout = go.Layout(
+    paper_bgcolor="#FFFFFF",
+    plot_bgcolor="#FAFBFD",
+    font=dict(family="Inter, sans-serif", color="#2C3E50", size=12),
+    title=dict(font=dict(color="#1B3A6B", size=15, family="Inter, sans-serif")),
+    xaxis=dict(
+        gridcolor="#E8EDF5", linecolor="#D0D9E8",
+        tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
+        zeroline=False,
+    ),
+    yaxis=dict(
+        gridcolor="#E8EDF5", linecolor="#D0D9E8",
+        tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
+        zeroline=False,
+    ),
+    legend=dict(
+        bgcolor="rgba(255,255,255,0.9)",
+        bordercolor="#E8EDF5", borderwidth=1,
+        font=dict(color="#2C3E50"),
+    ),
+    margin=dict(l=40, r=20, t=40, b=40),
+    colorway=CHART_COLORS,
+)
+pio.templates["bkk"] = _custom_template
+pio.templates.default = "bkk"
 
 
 def inject_css():
-    """Inject global CSS into the Streamlit app."""
     st.markdown("""
     <style>
-    /* ── Google Font ── */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
 
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+    /* ── Global ── */
+    html, body, [class*="css"], .stApp {
+        font-family: 'Inter', sans-serif !important;
+        background-color: #F0F4FA !important;
     }
 
-    /* ── Main background ── */
-    .stApp {
-        background-color: #F7F9FC;
+    /* ── Main content area ── */
+    .main .block-container {
+        padding: 2rem 2.5rem 2rem 2.5rem !important;
+        max-width: 1400px !important;
     }
 
     /* ── Sidebar ── */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1B3A6B 0%, #16305A 100%);
+        background: #1B3A6B !important;
+        border-right: none !important;
     }
-    [data-testid="stSidebar"] * {
-        color: #E8EEF8 !important;
+    [data-testid="stSidebar"] > div {
+        padding-top: 1.5rem;
     }
-    [data-testid="stSidebar"] .stMarkdown p {
-        color: #B0BFD8 !important;
-        font-size: 0.82rem;
+    /* Nav links */
+    [data-testid="stSidebarNav"] a {
+        color: #B8CCE8 !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+        border-radius: 8px !important;
+        padding: 0.4rem 0.8rem !important;
+        transition: all 0.15s ease;
     }
-    [data-testid="stSidebar"] hr {
-        border-color: #2E4F80 !important;
+    [data-testid="stSidebarNav"] a:hover,
+    [data-testid="stSidebarNav"] a[aria-selected="true"] {
+        background: rgba(245,166,35,0.18) !important;
+        color: #F5A623 !important;
+    }
+    /* Sidebar text */
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] div {
+        color: #B8CCE8 !important;
     }
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
         color: #F5A623 !important;
-        font-size: 0.95rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
+        font-size: 0.7rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.1em !important;
+        text-transform: uppercase !important;
+    }
+    [data-testid="stSidebar"] hr {
+        border-color: rgba(255,255,255,0.1) !important;
+        margin: 0.8rem 0 !important;
     }
 
-    /* ── Page title — only target Streamlit's heading elements, not raw HTML ── */
-    [data-testid="stHeadingWithActionElements"] h1,
-    .stMarkdown h1 {
+    /* ── Toggle ── */
+    [data-testid="stToggle"] {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 10px;
+        padding: 0.5rem 0.8rem;
+    }
+    [data-testid="stToggle"] p {
+        color: #FFFFFF !important;
+        font-weight: 600 !important;
+        font-size: 0.88rem !important;
+    }
+
+    /* ── Page titles ── */
+    [data-testid="stHeadingWithActionElements"] h1 {
         color: #1B3A6B !important;
         font-weight: 700 !important;
-        border-bottom: 3px solid #F5A623;
-        padding-bottom: 0.4rem;
-        margin-bottom: 0.2rem;
+        font-size: 1.8rem !important;
+        letter-spacing: -0.02em;
+        border-bottom: 3px solid #F5A623 !important;
+        padding-bottom: 0.5rem !important;
+        margin-bottom: 0.2rem !important;
     }
-    [data-testid="stHeadingWithActionElements"] h2,
-    .stMarkdown h2 { color: #1B3A6B !important; font-weight: 600 !important; }
-    [data-testid="stHeadingWithActionElements"] h3,
-    .stMarkdown h3 { color: #2E6CB8 !important; font-weight: 600 !important; }
+    [data-testid="stHeadingWithActionElements"] h2 {
+        color: #1B3A6B !important;
+        font-weight: 600 !important;
+        font-size: 1.15rem !important;
+    }
+    [data-testid="stHeadingWithActionElements"] h3 {
+        color: #2E6CB8 !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+    }
 
     /* ── Metric cards ── */
     [data-testid="stMetric"] {
-        background: #FFFFFF;
-        border: 1px solid #D6E4F0;
-        border-left: 4px solid #F5A623;
-        border-radius: 10px;
-        padding: 1rem 1.2rem !important;
-        box-shadow: 0 2px 8px rgba(27,58,107,0.07);
+        background: #FFFFFF !important;
+        border: 1px solid #E2EAF4 !important;
+        border-top: 3px solid #F5A623 !important;
+        border-radius: 12px !important;
+        padding: 1.1rem 1.3rem !important;
+        box-shadow: 0 1px 6px rgba(27,58,107,0.07) !important;
+        transition: box-shadow 0.2s;
     }
-    [data-testid="stMetricLabel"] {
-        color: #7F8C8D !important;
-        font-size: 0.8rem !important;
-        font-weight: 500 !important;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
+    [data-testid="stMetric"]:hover {
+        box-shadow: 0 4px 16px rgba(27,58,107,0.13) !important;
     }
-    [data-testid="stMetricValue"] {
+    [data-testid="stMetricLabel"] > div {
+        color: #8492A6 !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+    }
+    [data-testid="stMetricValue"] > div {
         color: #1B3A6B !important;
+        font-size: 1.75rem !important;
         font-weight: 700 !important;
-        font-size: 1.6rem !important;
+        letter-spacing: -0.02em !important;
     }
 
     /* ── Buttons ── */
     .stButton > button {
-        background-color: #1B3A6B !important;
+        background: linear-gradient(135deg, #1B3A6B, #2E6CB8) !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: 600 !important;
-        padding: 0.5rem 1.2rem !important;
-        transition: background 0.2s ease;
+        font-size: 0.88rem !important;
+        padding: 0.5rem 1.4rem !important;
+        box-shadow: 0 2px 8px rgba(27,58,107,0.2) !important;
+        transition: all 0.2s ease !important;
     }
     .stButton > button:hover {
-        background-color: #F5A623 !important;
+        background: linear-gradient(135deg, #F5A623, #E8941A) !important;
         color: #1B3A6B !important;
+        box-shadow: 0 4px 14px rgba(245,166,35,0.35) !important;
+        transform: translateY(-1px) !important;
     }
 
-    /* ── Info/success/warning boxes ── */
-    .stInfo {
-        background-color: #EBF2FB !important;
-        border-left: 4px solid #2E6CB8 !important;
-        border-radius: 8px !important;
-        color: #1B3A6B !important;
+    /* ── Alert boxes ── */
+    [data-testid="stAlert"] {
+        border-radius: 10px !important;
+        border: none !important;
+        font-size: 0.88rem !important;
     }
-    .stSuccess {
-        background-color: #EAFAF1 !important;
-        border-left: 4px solid #27AE60 !important;
-        border-radius: 8px !important;
-    }
-    .stWarning {
-        background-color: #FEF9E7 !important;
-        border-left: 4px solid #F5A623 !important;
-        border-radius: 8px !important;
+    div[data-baseweb="notification"] {
+        border-radius: 10px !important;
     }
 
-    /* ── Divider ── */
-    hr {
-        border-color: #D6E4F0 !important;
+    /* ── Plotly chart wrapper ── */
+    [data-testid="stPlotlyChart"] > div {
+        border-radius: 14px !important;
+        overflow: hidden !important;
+        box-shadow: 0 1px 8px rgba(27,58,107,0.08) !important;
+        background: #FFFFFF !important;
+    }
+
+    /* ── DataFrame ── */
+    [data-testid="stDataFrame"] {
+        border-radius: 12px !important;
+        overflow: hidden !important;
+        box-shadow: 0 1px 8px rgba(27,58,107,0.08) !important;
     }
 
     /* ── Expander ── */
     [data-testid="stExpander"] {
-        border: 1px solid #D6E4F0 !important;
-        border-radius: 10px !important;
         background: #FFFFFF !important;
+        border: 1px solid #E2EAF4 !important;
+        border-radius: 12px !important;
+        box-shadow: 0 1px 6px rgba(27,58,107,0.06) !important;
     }
 
-    /* ── Dataframe / table ── */
-    [data-testid="stDataFrame"] {
-        border-radius: 10px !important;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(27,58,107,0.07);
+    /* ── Multiselect tags ── */
+    [data-baseweb="tag"] {
+        background-color: #1B3A6B !important;
+        border-radius: 6px !important;
+    }
+    [data-baseweb="tag"] span {
+        color: #FFFFFF !important;
+    }
+
+    /* ── Divider ── */
+    hr {
+        border-color: #E2EAF4 !important;
+        margin: 1rem 0 !important;
     }
 
     /* ── Caption ── */
-    .stCaption {
-        color: #7F8C8D !important;
+    [data-testid="stCaptionContainer"] p {
+        color: #8492A6 !important;
         font-size: 0.78rem !important;
     }
 
-    /* ── Toggle (AI mode) ── */
-    [data-testid="stToggle"] {
-        background: #FFFFFF;
-        border: 1px solid #D6E4F0;
-        border-radius: 10px;
-        padding: 0.6rem 1rem;
-        box-shadow: 0 2px 6px rgba(27,58,107,0.06);
-    }
-    [data-testid="stToggle"] label {
-        font-weight: 600 !important;
-        color: #1B3A6B !important;
-    }
-
-    /* ── Plotly chart container ── */
-    [data-testid="stPlotlyChart"] {
-        background: #FFFFFF;
-        border-radius: 12px;
-        padding: 0.5rem;
-        box-shadow: 0 2px 8px rgba(27,58,107,0.06);
-    }
-
-    /* ── Selectbox / multiselect ── */
-    [data-testid="stMultiSelect"] > div,
-    [data-testid="stSelectbox"] > div {
-        border-radius: 8px !important;
+    /* ── Spinner ── */
+    .stSpinner > div {
+        border-top-color: #2E6CB8 !important;
     }
     </style>
     """, unsafe_allow_html=True)

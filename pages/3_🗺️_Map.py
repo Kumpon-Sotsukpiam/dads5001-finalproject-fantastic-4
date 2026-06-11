@@ -161,7 +161,7 @@ with col1:
                 "pending":     "#C83232",
                 "other":       "#AAAAAA",
             },
-            height=300,
+            height=300, template="bkk",
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -172,10 +172,10 @@ with col2:
         type_counts.columns = ["type", "count"]
         fig2 = px.bar(
             type_counts, x="count", y="type", orientation="h",
-            color="count", color_continuous_scale="Blues",
+            color="count", color_continuous_scale="Blues", template="bkk",
             height=300, labels={"count": "Complaints", "type": ""},
         )
-        fig2.update_layout(coloraxis_showscale=False)
+        fig2.update_layout(template="bkk", coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
 
 if total_filtered > max_pts:
