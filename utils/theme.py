@@ -328,3 +328,8 @@ def inject_css():
     """, unsafe_allow_html=True)
 
     return p  # return palette so pages can use it for inline HTML
+
+
+def get_template():
+    """Return the current BKK_TEMPLATE (updated by inject_css for the active theme)."""
+    return BKK_TEMPLATE

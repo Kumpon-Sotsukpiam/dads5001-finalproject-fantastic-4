@@ -15,10 +15,11 @@ import plotly.express as px
 from utils.queries import get_mongo_sample
 from utils.rag import ai_insight
 from utils.ui import ai_mode_toggle
-from utils.theme import inject_css, BKK_TEMPLATE
+from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
-inject_css()
+p = inject_css()
+t = get_template()
 st.title("🔍 Data Explorer")
 st.caption("Source: MongoDB · In-memory DuckDB filtering · All records")
 
@@ -140,7 +141,7 @@ with col1:
         state_counts.columns = ["status", "count"]
         fig = px.pie(
             state_counts, values="count", names="status",
-            title="Status Distribution", height=250, template=BKK_TEMPLATE,
+            title="Status Distribution", height=250, template=t,
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -154,7 +155,7 @@ with col2:
             labels={"count": "", "type": ""},
             color="count", color_continuous_scale="Blues",
         )
-        fig2.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
+        fig2.update_layout(template=t, coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
 
 # ── Table ─────────────────────────────────────────────────────────────────────

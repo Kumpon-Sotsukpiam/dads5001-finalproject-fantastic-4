@@ -13,10 +13,11 @@ import pandas as pd
 from utils.db import get_snowflake_conn
 from utils.rag import ai_insight
 from utils.ui import ai_mode_toggle
-from utils.theme import inject_css, BKK_TEMPLATE
+from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Snowflake Analytics", page_icon="❄️", layout="wide")
-inject_css()
+p = inject_css()
+t = get_template()
 st.title("❄️ Snowflake Deep-Dive Analytics")
 st.caption("Source: Snowflake warehouse · Pre-aggregated from 168,589 complaints · Traffy Fondue Jul–Dec 2025")
 
@@ -200,10 +201,10 @@ with col_l:
             rt, x="month_label", y="avg_hours",
             color="avg_hours", color_continuous_scale="Reds",
             labels={"avg_hours": "Avg Hours", "month_label": "Month"},
-            text="avg_hours", template=BKK_TEMPLATE, height=350,
+            text="avg_hours", template=t, height=350,
         )
         fig_rt.update_traces(texttemplate="%{text}h", textposition="outside")
-        fig_rt.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False, yaxis_title="Hours")
+        fig_rt.update_layout(template=t, coloraxis_showscale=False, yaxis_title="Hours")
         st.plotly_chart(fig_rt, use_container_width=True)
     else:
         st.info("No data.")
@@ -225,7 +226,7 @@ with col_r:
             height=350,
         )
         fig_rr.update_traces(line=dict(color="#EF553B", width=3), marker=dict(size=8))
-        fig_rr.update_layout(template=BKK_TEMPLATE, yaxis_ticksuffix="%")
+        fig_rr.update_layout(template=t, yaxis_ticksuffix="%")
         st.plotly_chart(fig_rr, use_container_width=True)
     else:
         st.info("No data.")
@@ -251,7 +252,7 @@ if not df_weekly.empty:
         mode="lines+markers",
         line=dict(color="#00CC96", width=2),
     ))
-    fig_wk.update_layout(template=BKK_TEMPLATE, 
+    fig_wk.update_layout(template=t, 
         yaxis=dict(title="Tickets"),
         yaxis2=dict(title="Completion %", overlaying="y", side="right",
                     ticksuffix="%", range=[0, 100]),
@@ -287,10 +288,10 @@ if not dff.empty:
         zmin=1, zmax=5,
         text_auto=".2f",
         labels={"color": "Avg ⭐"},
-        aspect="auto", template=BKK_TEMPLATE,
+        aspect="auto", template=t,
         height=550,
     )
-    fig_heat.update_layout(template=BKK_TEMPLATE, xaxis_title="Month", yaxis_title="District")
+    fig_heat.update_layout(template=t, xaxis_title="Month", yaxis_title="District")
     st.plotly_chart(fig_heat, use_container_width=True)
 else:
     st.info("No data.")
@@ -334,23 +335,34 @@ if not df_summary.empty:
     sc_display = sc_display.rename(columns=display_cols)
     sc_display = sc_display.sort_values("Total Tickets", ascending=False).reset_index(drop=True)
 
+    # Theme-aware scorecard colours
+    from utils.theme import _is_dark as _theme_is_dark
+    if _theme_is_dark():
+        _good   = "background-color:#1a3a2a; color:#4ade80"
+        _warn   = "background-color:#3a2e0a; color:#fbbf24"
+        _bad    = "background-color:#3a1a1a; color:#f87171"
+    else:
+        _good   = "background-color:#c6efce; color:#276221"
+        _warn   = "background-color:#ffeb9c; color:#9c6500"
+        _bad    = "background-color:#ffc7ce; color:#9c0006"
+
     def color_completion(val):
         if pd.isna(val): return ""
-        if val >= 80:   return "background-color: #c6efce; color: #276221"
-        if val >= 60:   return "background-color: #ffeb9c; color: #9c6500"
-        return "background-color: #ffc7ce; color: #9c0006"
+        if val >= 80:   return _good
+        if val >= 60:   return _warn
+        return _bad
 
     def color_sat(val):
         if pd.isna(val): return ""
-        if val >= 4.0:  return "background-color: #c6efce; color: #276221"
-        if val >= 3.0:  return "background-color: #ffeb9c; color: #9c6500"
-        return "background-color: #ffc7ce; color: #9c0006"
+        if val >= 4.0:  return _good
+        if val >= 3.0:  return _warn
+        return _bad
 
     def color_reopen(val):
         if pd.isna(val): return ""
-        if val <= 5:    return "background-color: #c6efce; color: #276221"
-        if val <= 15:   return "background-color: #ffeb9c; color: #9c6500"
-        return "background-color: #ffc7ce; color: #9c0006"
+        if val <= 5:    return _good
+        if val <= 15:   return _warn
+        return _bad
 
     styled = sc_display.style \
         .map(color_completion, subset=["Completion %"]) \
@@ -409,11 +421,11 @@ with col_a:
             slow, x="avg_hours", y="problem_type", orientation="h",
             color="avg_hours", color_continuous_scale="Reds",
             text="avg_hours",
-            labels={"avg_hours": "Avg Hours", "problem_type": ""}, template=BKK_TEMPLATE,
+            labels={"avg_hours": "Avg Hours", "problem_type": ""}, template=t,
             height=380,
         )
         fig_slow.update_traces(texttemplate="%{text}h", textposition="outside")
-        fig_slow.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
+        fig_slow.update_layout(template=t, coloraxis_showscale=False)
         st.plotly_chart(fig_slow, use_container_width=True)
         st.caption("Min. 50 tickets to qualify")
     else:
@@ -436,7 +448,7 @@ with col_b:
             height=380,
         )
         fig_reopen.update_traces(texttemplate="%{text}%", textposition="outside")
-        fig_reopen.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
+        fig_reopen.update_layout(template=t, coloraxis_showscale=False)
         st.plotly_chart(fig_reopen, use_container_width=True)
         st.caption("Min. 50 tickets to qualify")
     else:

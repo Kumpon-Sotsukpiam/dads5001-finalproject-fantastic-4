@@ -14,10 +14,11 @@ import plotly.express as px
 from utils.queries import get_map_data
 from utils.rag import ai_insight
 from utils.ui import ai_mode_toggle
-from utils.theme import inject_css, BKK_TEMPLATE
+from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Map", page_icon="🗺️", layout="wide")
-inject_css()
+p = inject_css()
+t = get_template()
 st.title("🗺️ Geographic Distribution")
 st.caption("Source: MongoDB · GPS coordinates from Traffy Fondue reports")
 
@@ -161,7 +162,7 @@ with col1:
                 "pending":     "#C83232",
                 "other":       "#AAAAAA",
             },
-            height=300, template=BKK_TEMPLATE,
+            height=300, template=t,
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -172,10 +173,10 @@ with col2:
         type_counts.columns = ["type", "count"]
         fig2 = px.bar(
             type_counts, x="count", y="type", orientation="h",
-            color="count", color_continuous_scale="Blues", template=BKK_TEMPLATE,
+            color="count", color_continuous_scale="Blues", template=t,
             height=300, labels={"count": "Complaints", "type": ""},
         )
-        fig2.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
+        fig2.update_layout(template=t, coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
 
 if total_filtered > max_pts:

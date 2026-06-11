@@ -17,10 +17,11 @@ from utils.queries import (
 )
 from utils.rag import ai_insight
 from utils.ui import ai_mode_toggle
-from utils.theme import inject_css, BKK_TEMPLATE
+from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
-inject_css()
+p = inject_css()
+t = get_template()
 st.title("📊 Analytics Dashboard")
 st.caption("Source: MongoDB + DuckDB · Data: Traffy Fondue Jul-Dec 2025")
 
@@ -110,7 +111,7 @@ with col_left:
             name="Finished", mode="lines+markers",
             line=dict(color="#00CC96", width=2),
         ))
-        fig.update_layout(template=BKK_TEMPLATE, 
+        fig.update_layout(template=t, 
             xaxis_title="Week", yaxis_title="Tickets",
             legend=dict(orientation="h"), height=350,
         )
@@ -131,7 +132,7 @@ with col_right:
             labels={"total": "Tickets", "problem_type": ""},
             height=350,
         )
-        fig2.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
+        fig2.update_layout(template=t, coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("No data available.")
@@ -148,7 +149,7 @@ if not mt.empty:
         mt_agg, x="month_label", y="ticket_count",
         color="problem_type", markers=True,
         labels={"ticket_count": "Tickets", "month_label": "Month",
-                "problem_type": "Type"}, template=BKK_TEMPLATE,
+                "problem_type": "Type"}, template=t,
         height=400,
     )
     st.plotly_chart(fig3, use_container_width=True)
@@ -170,7 +171,7 @@ with col3_l:
             color="avg_satisfaction",
             color_continuous_scale="RdYlGn", range_color=[1, 5],
             labels={"total_tickets": "Tickets", "district": "",
-                    "avg_satisfaction": "Avg ⭐"}, template=BKK_TEMPLATE,
+                    "avg_satisfaction": "Avg ⭐"}, template=t,
             height=500,
         )
         st.plotly_chart(fig4, use_container_width=True)
@@ -191,7 +192,7 @@ with col3_r:
             labels={"avg_hours": "Hours", "problem_type": ""},
             height=500,
         )
-        fig5.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
+        fig5.update_layout(template=t, coloraxis_showscale=False)
         st.plotly_chart(fig5, use_container_width=True)
     else:
         st.info("No data available.")
