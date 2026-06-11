@@ -17,6 +17,7 @@ from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Snowflake Analytics", page_icon="❄️", layout="wide")
 p = inject_css()
+ai_mode_toggle()
 t = get_template()
 st.title("❄️ Snowflake Deep-Dive Analytics")
 st.caption("Source: Snowflake warehouse · Pre-aggregated from 168,589 complaints · Traffy Fondue Jul–Dec 2025")
@@ -89,7 +90,6 @@ except Exception as e:
 
 MONTH_MAP = {7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
 
-ai_mode_toggle()
 
 # ── Sidebar filters ───────────────────────────────────────────────────────────
 with st.sidebar:

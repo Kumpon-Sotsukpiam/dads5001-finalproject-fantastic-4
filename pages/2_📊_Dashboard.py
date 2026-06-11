@@ -21,6 +21,7 @@ from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 p = inject_css()
+ai_mode_toggle()
 t = get_template()
 st.title("📊 Analytics Dashboard")
 st.caption("Source: MongoDB + DuckDB · Data: Traffy Fondue Jul-Dec 2025")
@@ -56,7 +57,6 @@ c4.metric("Avg Satisfaction ⭐", "{:.2f} / 5".format(avg_sat))
 
 st.divider()
 
-ai_mode_toggle()
 
 # ── Sidebar filters ───────────────────────────────────────────────────────────
 with st.sidebar:

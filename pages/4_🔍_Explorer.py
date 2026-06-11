@@ -19,6 +19,7 @@ from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 p = inject_css()
+ai_mode_toggle()
 t = get_template()
 st.title("🔍 Data Explorer")
 st.caption("Source: MongoDB · In-memory DuckDB filtering · All records")
@@ -44,7 +45,6 @@ for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
     if col not in df.columns:
         df[col] = None
 
-ai_mode_toggle()
 
 # ── Sidebar: cascading filters ────────────────────────────────────────────────
 with st.sidebar:

@@ -18,6 +18,7 @@ from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Map", page_icon="🗺️", layout="wide")
 p = inject_css()
+ai_mode_toggle()
 t = get_template()
 st.title("🗺️ Geographic Distribution")
 st.caption("Source: MongoDB · GPS coordinates from Traffy Fondue reports")
@@ -47,7 +48,6 @@ df_all = df_all[
     df_all["longitude"].between(100.3, 101.0)
 ]
 
-ai_mode_toggle()
 
 # ── Sidebar: cascading filters ────────────────────────────────────────────────
 with st.sidebar:
