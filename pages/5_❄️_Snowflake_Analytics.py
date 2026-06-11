@@ -107,6 +107,24 @@ with st.sidebar:
 
     top_n = st.slider("Top N Districts (scorecard)", 5, 50, 20, 5)
 
+    st.divider()
+    # Min complaints threshold — default = actual minimum in filtered data
+    if not df_dt.empty:
+        type_counts = df_dt.groupby("problem_type")["ticket_count"].sum()
+        min_possible = max(1, int(type_counts.min()))
+        max_possible = int(type_counts.max())
+        default_min  = min_possible
+    else:
+        min_possible, max_possible, default_min = 1, 1000, 1
+    min_tickets = st.slider(
+        "Min. complaints to qualify (problem type filters)",
+        min_value=min_possible,
+        max_value=min(max_possible, 500),
+        value=default_min,
+        step=max(1, (min(max_possible, 500) - min_possible) // 20),
+        help="Problem types with fewer tickets than this are excluded from 'Worst Performing' charts",
+    )
+
 # ── Filtered base ─────────────────────────────────────────────────────────────
 dff = df_dt[
     df_dt["month"].isin(sel_months) &
@@ -399,7 +417,7 @@ with col_a:
             tickets=("ticket_count", "sum"),
         ).reset_index()
         slow["avg_hours"] = (slow["avg_hours"] / 60).round(1)
-        slow = slow[slow["tickets"] >= 50].nlargest(10, "avg_hours").sort_values("avg_hours")
+        slow = slow[slow["tickets"] >= min_tickets].nlargest(10, "avg_hours").sort_values("avg_hours")
         fig_slow = px.bar(
             slow, x="avg_hours", y="problem_type", orientation="h",
             color="avg_hours", color_continuous_scale="Reds",
@@ -410,7 +428,7 @@ with col_a:
         fig_slow.update_traces(texttemplate="%{text}h", textposition="outside")
         fig_slow.update_layout(coloraxis_showscale=False)
         st.plotly_chart(fig_slow, use_container_width=True)
-        st.caption("Min. 50 tickets to qualify")
+        st.caption("Min. {:,} complaints to qualify (adjust in sidebar)".format(min_tickets))
     else:
         st.info("No data.")
 
@@ -422,7 +440,7 @@ with col_b:
             tickets=("ticket_count", "sum"),
         ).reset_index()
         reopen["reopen_rate"] = (reopen["total_reopens"] / reopen["tickets"] * 100).round(1)
-        reopen = reopen[reopen["tickets"] >= 50].nlargest(10, "reopen_rate").sort_values("reopen_rate")
+        reopen = reopen[reopen["tickets"] >= min_tickets].nlargest(10, "reopen_rate").sort_values("reopen_rate")
         fig_reopen = px.bar(
             reopen, x="reopen_rate", y="problem_type", orientation="h",
             color="reopen_rate", color_continuous_scale="Oranges",
@@ -433,7 +451,7 @@ with col_b:
         fig_reopen.update_traces(texttemplate="%{text}%", textposition="outside")
         fig_reopen.update_layout(coloraxis_showscale=False)
         st.plotly_chart(fig_reopen, use_container_width=True)
-        st.caption("Min. 50 tickets to qualify")
+        st.caption("Min. {:,} complaints to qualify (adjust in sidebar)".format(min_tickets))
     else:
         st.info("No data.")
 
@@ -455,7 +473,7 @@ if st.session_state.get("ai_mode", False):
                 tickets=("ticket_count", "sum"),
             ).reset_index()
             slow_types["avg_hours"] = (slow_types["avg_hours"] / 60).round(1)
-            slow_types = slow_types[slow_types["tickets"] >= 50].nlargest(3, "avg_hours")
+            slow_types = slow_types[slow_types["tickets"] >= min_tickets].nlargest(3, "avg_hours")
 
             # Most reopened
             reopen_types = dff.groupby("problem_type").agg(
@@ -463,7 +481,7 @@ if st.session_state.get("ai_mode", False):
                 tickets=("ticket_count", "sum"),
             ).reset_index()
             reopen_types["reopen_pct"] = (reopen_types["reopens"] / reopen_types["tickets"] * 100).round(1)
-            reopen_types = reopen_types[reopen_types["tickets"] >= 50].nlargest(3, "reopen_pct")
+            reopen_types = reopen_types[reopen_types["tickets"] >= min_tickets].nlargest(3, "reopen_pct")
 
             context = (
                 "Districts with lowest satisfaction:\n{}\n\n"
