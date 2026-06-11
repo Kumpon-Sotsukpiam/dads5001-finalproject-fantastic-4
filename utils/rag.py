@@ -11,7 +11,7 @@ RAG (Retrieval-Augmented Generation) helpers.
 import os
 import streamlit as st
 import google.generativeai as genai
-from utils.db import get_mongo_collection
+from utils.db import get_mongo_collection, _get_secret
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,9 +22,9 @@ TOP_K        = 8
 
 @st.cache_resource(show_spinner="Connecting to Gemini ...")
 def get_gemini_model():
-    api_key = os.getenv("GOOGLE_API_KEY")
+    api_key = _get_secret("GOOGLE_API_KEY")
     if not api_key:
-        st.error("GOOGLE_API_KEY not set in .env")
+        st.error("GOOGLE_API_KEY not set in secrets or .env")
         st.stop()
     genai.configure(api_key=api_key)
     return genai.GenerativeModel(GEMINI_MODEL)
