@@ -2,10 +2,10 @@
 utils/db.py
 -----------
 Cached connection helpers for MongoDB and Snowflake.
-Uses st.cache_resource so connections are reused across reruns.
 
-NOTE: Snowflake connection is used only by pipeline_snowflake.py.
-      The Streamlit app uses MongoDB + DuckDB for all live queries.
+Reads credentials from (in order of priority):
+  1. Streamlit secrets (st.secrets) — used when deployed on Streamlit Cloud
+  2. Environment variables / .env file   — used when running locally
 """
 
 import os
@@ -16,16 +16,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _get_secret(key, default=None):
+    """Read from st.secrets first, fall back to os.environ."""
+    try:
+        return st.secrets[key]
+    except Exception:
+        return os.getenv(key, default)
+
+
 @st.cache_resource
 def get_mongo_collection():
     """Return MongoDB collection (cached singleton)."""
-    client = MongoClient(
-        os.getenv("MONGO_URI"),
-        serverSelectionTimeoutMS=15000,
-    )
-    db  = client[os.getenv("MONGO_DB", "dads5001")]
-    col = db[os.getenv("MONGO_COLLECTION", "bangkok_complaints")]
-    return col
+    uri = _get_secret("MONGO_URI")
+    db_name  = _get_secret("MONGO_DB",         "dads5001")
+    col_name = _get_secret("MONGO_COLLECTION", "bangkok_complaints")
+
+    client = MongoClient(uri, serverSelectionTimeoutMS=15000)
+    return client[db_name][col_name]
 
 
 def get_snowflake_conn():
@@ -35,12 +42,12 @@ def get_snowflake_conn():
     """
     import snowflake.connector
     return snowflake.connector.connect(
-        account       = os.getenv("SNOWFLAKE_ACCOUNT"),
-        user          = os.getenv("SNOWFLAKE_USER"),
-        password      = os.getenv("SNOWFLAKE_PASSWORD"),
-        warehouse     = os.getenv("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH"),
-        database      = os.getenv("SNOWFLAKE_DATABASE", "DADS5001"),
-        schema        = os.getenv("SNOWFLAKE_SCHEMA", "PUBLIC"),
-        login_timeout = 30,
+        account         = _get_secret("SNOWFLAKE_ACCOUNT"),
+        user            = _get_secret("SNOWFLAKE_USER"),
+        password        = _get_secret("SNOWFLAKE_PASSWORD"),
+        warehouse       = _get_secret("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH"),
+        database        = _get_secret("SNOWFLAKE_DATABASE",  "DADS5001"),
+        schema          = _get_secret("SNOWFLAKE_SCHEMA",    "PUBLIC"),
+        login_timeout   = 30,
         network_timeout = 30,
     )
