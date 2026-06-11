@@ -97,28 +97,9 @@ CSV files (Jul–Dec 2025) &nbsp;→&nbsp; Pandas + DuckDB &nbsp;→&nbsp; Mongo
 
 st.divider()
 
-# ── AI mode toggle ────────────────────────────────────────────────────────────
+# ── AI mode status ────────────────────────────────────────────────────────────
 st.subheader("🤖 AI Mode")
-st.markdown(f"""
-<div style="
-    background: {p['card']};
-    border: 1px solid {p['border']};
-    border-radius: 12px;
-    padding: 1.2rem 1.5rem;
-    margin-bottom: 0.5rem;
-">
-""", unsafe_allow_html=True)
-def _sync_ai_mode():
-    st.session_state["ai_mode"] = st.session_state["_home_ai_toggle"]
-
-st.toggle(
-    "Enable AI Mode",
-    value=st.session_state.get("ai_mode", False),
-    key="_home_ai_toggle",
-    on_change=_sync_ai_mode,
-)
 if st.session_state.get("ai_mode", False):
     st.success("AI mode **ON** — AI insight buttons are now active on every page.")
 else:
-    st.info("AI mode **OFF** — analytics-only. Toggle ON to unlock AI insights on each page.")
-st.markdown("</div>", unsafe_allow_html=True)
+    st.info("AI mode **OFF** — use the toggle in the sidebar to enable AI insights.")
