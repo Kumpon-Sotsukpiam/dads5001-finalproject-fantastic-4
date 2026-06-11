@@ -44,8 +44,8 @@ for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
 with st.sidebar:
     st.header("Filters")
 
-    # Month range — default always 7-12 (full range)
-    month_range = st.slider("Month range", 7, 7, (7, 12))
+    # Month range — default เดือน 7 เพื่อให้โหลดเร็ว
+    month_range = st.slider("Month range", 7, 12, (7, 7))
 
     # Dataset after month filter (used to build downstream options)
     df_after_month = df[df["month"].between(month_range[0], month_range[1])]
