@@ -13,6 +13,7 @@ import pandas as pd
 import duckdb
 import plotly.express as px
 from utils.queries import get_mongo_sample
+from utils.rag import ai_insight
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 st.title("🔍 Data Explorer")
@@ -185,3 +186,32 @@ if available_cols:
     )
 else:
     st.info("No data columns available to display.")
+
+# ── AI Insight (AI mode only) ─────────────────────────────────────────────────
+st.divider()
+if st.session_state.get("ai_mode", False):
+    st.subheader("🤖 AI Insight")
+    if st.button("✨ Summarize filtered records", use_container_width=True):
+        if not filtered.empty:
+            top_types    = filtered["problem_type"].value_counts().head(5).to_dict() if "problem_type" in filtered.columns else {}
+            top_districts = filtered["district"].value_counts().head(5).to_dict()    if "district"     in filtered.columns else {}
+            top_status   = filtered["state_en"].value_counts().to_dict()             if "state_en"     in filtered.columns else {}
+            avg_star     = round(pd.to_numeric(filtered.get("star", pd.Series()), errors="coerce").mean(), 2)
+            avg_dur      = round(pd.to_numeric(filtered.get("duration_minutes_total", pd.Series()), errors="coerce").mean() / 60, 1)
+            context = (
+                "Filtered records: {:,}\n"
+                "Top problem types: {}\n"
+                "Top districts: {}\n"
+                "Status breakdown: {}\n"
+                "Avg satisfaction: {}\n"
+                "Avg resolution time: {} hrs"
+            ).format(len(filtered), top_types, top_districts, top_status, avg_star, avg_dur)
+            with st.spinner("Analyzing ..."):
+                insight = ai_insight(context,
+                    "Summarize what these filtered Bangkok complaint records reveal. "
+                    "What are the main issues, which areas are affected, and what should be prioritized?")
+            st.info(insight)
+        else:
+            st.warning("No filtered data to analyze.")
+else:
+    st.caption("💡 Enable **AI mode** on the Home page to get AI-powered summaries of filtered records.")

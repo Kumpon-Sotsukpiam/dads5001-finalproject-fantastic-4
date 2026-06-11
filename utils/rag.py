@@ -114,6 +114,29 @@ SYSTEM_PROMPT = (
 )
 
 
+def ai_insight(context_text, prompt):
+    """
+    One-shot AI insight from structured context (no retrieval).
+    Used by Dashboard, Map, Explorer, Snowflake pages.
+    """
+    client = get_groq_client()
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {"role": "system", "content": (
+                "You are an urban analytics assistant for Bangkok Metropolitan Administration.\n"
+                "Analyze the data summary provided and give concise, actionable insights.\n"
+                "Answer in the same language as the user's prompt (Thai or English).\n"
+                "Be specific — cite numbers, name districts or problem types. Max 5 bullet points."
+            )},
+            {"role": "user", "content": "DATA:\n{}\n\nTASK: {}".format(context_text, prompt)},
+        ],
+        temperature=0.3,
+        max_tokens=512,
+    )
+    return response.choices[0].message.content
+
+
 def ask_rag(question, chat_history):
     """Retrieve relevant complaints -> build context -> call Groq."""
     docs    = text_search(question, TOP_K)

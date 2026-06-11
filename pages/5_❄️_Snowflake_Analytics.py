@@ -11,24 +11,35 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from utils.db import get_snowflake_conn
+from utils.rag import ai_insight
 
 st.set_page_config(page_title="Snowflake Analytics", page_icon="❄️", layout="wide")
 st.title("❄️ Snowflake Deep-Dive Analytics")
 st.caption("Source: Snowflake warehouse · Pre-aggregated from 168,589 complaints · Traffy Fondue Jul–Dec 2025")
 
 
+# ── Helper ────────────────────────────────────────────────────────────────────
+def _sf_query(sql):
+    """Execute SQL against Snowflake and return a DataFrame."""
+    conn = get_snowflake_conn()
+    cur  = conn.cursor()
+    cur.execute(sql)
+    cols = [d[0].lower() for d in cur.description]
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return pd.DataFrame(rows, columns=cols)
+
+
 # ── Cached loaders ────────────────────────────────────────────────────────────
 @st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...")
 def load_district_type():
-    conn = get_snowflake_conn()
-    df = pd.read_sql("""
+    df = _sf_query("""
         SELECT year, month, district, problem_type, state_en,
                ticket_count, avg_resolution_minutes, avg_star, total_reopens
         FROM AGG_DISTRICT_TYPE
         ORDER BY year, month, district
-    """, conn)
-    conn.close()
-    df.columns = [c.lower() for c in df.columns]
+    """)
     for c in ["ticket_count", "avg_resolution_minutes", "avg_star", "total_reopens", "month"]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
     return df
@@ -36,14 +47,11 @@ def load_district_type():
 
 @st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...")
 def load_weekly():
-    conn = get_snowflake_conn()
-    df = pd.read_sql("""
+    df = _sf_query("""
         SELECT year, week_num, week_start, problem_type, ticket_count, finished_count
         FROM AGG_WEEKLY
         ORDER BY year, week_num
-    """, conn)
-    conn.close()
-    df.columns = [c.lower() for c in df.columns]
+    """)
     df["week_start"]     = pd.to_datetime(df["week_start"], errors="coerce")
     df["ticket_count"]   = pd.to_numeric(df["ticket_count"],   errors="coerce")
     df["finished_count"] = pd.to_numeric(df["finished_count"], errors="coerce")
@@ -52,15 +60,12 @@ def load_weekly():
 
 @st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...")
 def load_district_summary():
-    conn = get_snowflake_conn()
-    df = pd.read_sql("""
+    df = _sf_query("""
         SELECT district, total_tickets, finished, in_progress_count,
                avg_resolution_minutes, avg_satisfaction
         FROM AGG_DISTRICT_SUMMARY
         ORDER BY total_tickets DESC
-    """, conn)
-    conn.close()
-    df.columns = [c.lower() for c in df.columns]
+    """)
     for c in ["total_tickets", "finished", "in_progress_count",
               "avg_resolution_minutes", "avg_satisfaction"]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
@@ -73,7 +78,9 @@ try:
     df_weekly  = load_weekly()
     df_summary = load_district_summary()
 except Exception as e:
+    import traceback
     st.error("❌ Snowflake connection failed: {}".format(e))
+    st.code(traceback.format_exc())
     st.stop()
 
 MONTH_MAP = {7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
@@ -429,3 +436,51 @@ with col_b:
         st.caption("Min. 50 tickets to qualify")
     else:
         st.info("No data.")
+
+# ── AI Insight (AI mode only) ─────────────────────────────────────────────────
+st.divider()
+if st.session_state.get("ai_mode", False):
+    st.subheader("🤖 AI Insight")
+    if st.button("✨ Analyze Snowflake performance data", use_container_width=True):
+        if not df_summary.empty and not dff.empty:
+            # Worst 3 districts by satisfaction
+            worst_sat = df_summary.nsmallest(3, "avg_satisfaction")[
+                ["district", "total_tickets", "avg_satisfaction", "avg_resolution_minutes"]
+            ].copy()
+            worst_sat["avg_resolution_hours"] = (worst_sat["avg_resolution_minutes"] / 60).round(1)
+
+            # Slowest problem types
+            slow_types = dff.groupby("problem_type").agg(
+                avg_hours=("avg_resolution_minutes", "mean"),
+                tickets=("ticket_count", "sum"),
+            ).reset_index()
+            slow_types["avg_hours"] = (slow_types["avg_hours"] / 60).round(1)
+            slow_types = slow_types[slow_types["tickets"] >= 50].nlargest(3, "avg_hours")
+
+            # Most reopened
+            reopen_types = dff.groupby("problem_type").agg(
+                reopens=("total_reopens", "sum"),
+                tickets=("ticket_count", "sum"),
+            ).reset_index()
+            reopen_types["reopen_pct"] = (reopen_types["reopens"] / reopen_types["tickets"] * 100).round(1)
+            reopen_types = reopen_types[reopen_types["tickets"] >= 50].nlargest(3, "reopen_pct")
+
+            context = (
+                "Districts with lowest satisfaction:\n{}\n\n"
+                "Slowest problem types to resolve:\n{}\n\n"
+                "Most reopened problem types:\n{}"
+            ).format(
+                worst_sat[["district", "avg_satisfaction", "avg_resolution_hours"]].to_string(index=False),
+                slow_types[["problem_type", "avg_hours", "tickets"]].to_string(index=False),
+                reopen_types[["problem_type", "reopen_pct", "tickets"]].to_string(index=False),
+            )
+            with st.spinner("Analyzing ..."):
+                insight = ai_insight(context,
+                    "Based on this Snowflake performance data for Bangkok complaints, "
+                    "identify the most critical service delivery problems. "
+                    "Which districts and problem types need urgent intervention and why?")
+            st.info(insight)
+        else:
+            st.warning("Not enough data to analyze.")
+else:
+    st.caption("💡 Enable **AI mode** on the Home page to get AI-powered performance analysis.")

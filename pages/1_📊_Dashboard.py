@@ -15,6 +15,7 @@ from utils.queries import (
     get_top_problem_types,
     get_resolution_stats,
 )
+from utils.rag import ai_insight
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Analytics Dashboard")
@@ -189,3 +190,26 @@ with col3_r:
         st.plotly_chart(fig5, use_container_width=True)
     else:
         st.info("No data available.")
+
+# ── AI Insight (AI mode only) ─────────────────────────────────────────────────
+st.divider()
+if st.session_state.get("ai_mode", False):
+    st.subheader("🤖 AI Insight")
+    if st.button("✨ Analyze current dashboard data", use_container_width=True):
+        if not district_summary.empty and not top_problems.empty:
+            top5_dist = district_summary.head(5)[["district","total_tickets","avg_satisfaction"]].to_string(index=False)
+            top5_type = top_problems.head(5)[["problem_type","total"]].to_string(index=False) if "total" in top_problems.columns else ""
+            context = (
+                "KPIs: Total={:,}, Finished={:,}, Completion={:.1f}%, Avg Satisfaction={:.2f}\n"
+                "Top 5 Districts:\n{}\n"
+                "Top 5 Problem Types:\n{}"
+            ).format(total, finished, rate, avg_sat, top5_dist, top5_type)
+            with st.spinner("Analyzing ..."):
+                insight = ai_insight(context,
+                    "Summarize key findings from this Bangkok complaints dashboard. "
+                    "Highlight which districts and problem types need the most attention and why.")
+            st.info(insight)
+        else:
+            st.warning("Not enough data to analyze.")
+else:
+    st.caption("💡 Enable **AI mode** on the Home page to get AI-powered insights on this dashboard.")

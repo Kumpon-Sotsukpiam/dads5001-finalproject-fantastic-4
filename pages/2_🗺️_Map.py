@@ -12,6 +12,7 @@ import pandas as pd
 import pydeck as pdk
 import plotly.express as px
 from utils.queries import get_map_data
+from utils.rag import ai_insight
 
 st.set_page_config(page_title="Map", page_icon="🗺️", layout="wide")
 st.title("🗺️ Geographic Distribution")
@@ -179,3 +180,26 @@ if total_filtered > max_pts:
             len(df_map), total_filtered
         )
     )
+
+# ── AI Insight (AI mode only) ─────────────────────────────────────────────────
+st.divider()
+if st.session_state.get("ai_mode", False):
+    st.subheader("🤖 AI Insight")
+    if st.button("✨ Analyze current map data", use_container_width=True):
+        if not df.empty:
+            top_districts = df["district"].value_counts().head(5).to_dict() if "district" in df.columns else {}
+            top_types     = df["problem_type"].value_counts().head(5).to_dict() if "problem_type" in df.columns else {}
+            context = (
+                "Filtered map data: {:,} complaints\n"
+                "Top 5 districts: {}\n"
+                "Top 5 problem types: {}"
+            ).format(len(df), top_districts, top_types)
+            with st.spinner("Analyzing ..."):
+                insight = ai_insight(context,
+                    "Analyze the geographic distribution of Bangkok complaints shown on this map. "
+                    "What patterns do you see? Which areas and problem types are hotspots?")
+            st.info(insight)
+        else:
+            st.warning("No data to analyze.")
+else:
+    st.caption("💡 Enable **AI mode** on the Home page to get AI-powered geographic insights.")
