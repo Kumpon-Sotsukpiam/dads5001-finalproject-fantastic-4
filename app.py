@@ -68,18 +68,18 @@ pages = [
 for col, (icon, title, desc) in zip(cols, pages):
     col.markdown(f"""
     <div style="
-        background:#FFFFFF;
-        border:1px solid #D6E4F0;
-        border-top:4px solid #F5A623;
-        border-radius:10px;
-        padding:1rem;
-        text-align:center;
-        height:160px;
-        box-shadow:0 2px 8px rgba(27,58,107,0.06);
+        background: var(--background-color);
+        border: 1px solid rgba(128,128,128,0.2);
+        border-top: 4px solid #F5A623;
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        height: 160px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     ">
         <div style="font-size:2rem;">{icon}</div>
-        <div style="font-weight:700;color:#1B3A6B;margin:0.3rem 0 0.4rem;">{title}</div>
-        <div style="font-size:0.78rem;color:#7F8C8D;line-height:1.4;">{desc}</div>
+        <div style="font-weight:700; color: var(--text-color); margin:0.3rem 0 0.4rem;">{title}</div>
+        <div style="font-size:0.78rem; color: var(--text-color); opacity:0.65; line-height:1.4;">{desc}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -88,8 +88,8 @@ st.divider()
 # ── Data pipeline ─────────────────────────────────────────────────────────────
 st.subheader("⚙️ Data Pipeline")
 st.markdown("""
-<div style="background:#FFFFFF;border:1px solid #D6E4F0;border-radius:12px;padding:1.2rem 2rem;">
-<code style="color:#1B3A6B;font-size:0.9rem;">
+<div style="background:var(--background-color);border:1px solid rgba(128,128,128,0.2);border-radius:12px;padding:1.2rem 2rem;">
+<code style="color:var(--text-color);font-size:0.9rem;">
 CSV files (Jul–Dec 2025) &nbsp;→&nbsp; Pandas + DuckDB &nbsp;→&nbsp; MongoDB Atlas &nbsp;→&nbsp; Snowflake &nbsp;→&nbsp; Streamlit + Plotly
 </code>
 </div>
@@ -101,12 +101,11 @@ st.divider()
 st.subheader("🤖 AI Mode")
 st.markdown("""
 <div style="
-    background:#FFFFFF;
-    border:1px solid #D6E4F0;
-    border-radius:12px;
-    padding:1.2rem 1.5rem;
-    box-shadow:0 2px 8px rgba(27,58,107,0.06);
-    margin-bottom:0.5rem;
+    background: var(--background-color);
+    border: 1px solid rgba(128,128,128,0.2);
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 0.5rem;
 ">
 """, unsafe_allow_html=True)
 def _sync_ai_mode():

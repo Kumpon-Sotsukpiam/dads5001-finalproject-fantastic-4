@@ -80,39 +80,28 @@ def inject_css():
 
     st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* ── Font (both themes) ── */
+    /* ── Font ── */
     html, body, [class*="css"], .stApp {
         font-family: 'Inter', sans-serif !important;
     }
 
-    /* ── Main content area ── */
+    /* ── Layout ── */
     .main .block-container {
-        padding: 2rem 2.5rem 2rem 2.5rem !important;
+        padding: 2rem 2.5rem !important;
         max-width: 1400px !important;
     }
 
-    /* ══════════════════════════════════════
-       LIGHT THEME
-    ══════════════════════════════════════ */
-    @media (prefers-color-scheme: light) {
-        .stApp { background-color: #F0F4FA !important; }
-    }
-    /* Streamlit also adds a class when light theme is forced */
-    [data-theme="light"] .stApp,
-    .stApp[data-theme="light"] {
-        background-color: #F0F4FA !important;
-    }
-
-    /* ── Sidebar (always navy — same in both themes) ── */
+    /* ════════════════════════════════════════════════════
+       SIDEBAR — always navy (brand color, both themes)
+    ════════════════════════════════════════════════════ */
     [data-testid="stSidebar"] {
         background: #1B3A6B !important;
         border-right: none !important;
     }
-    [data-testid="stSidebar"] > div {
-        padding-top: 1.5rem;
-    }
+    [data-testid="stSidebar"] > div { padding-top: 1.5rem; }
+
     [data-testid="stSidebarNav"] a {
         color: #B8CCE8 !important;
         font-size: 0.88rem !important;
@@ -129,9 +118,7 @@ def inject_css():
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] div {
-        color: #B8CCE8 !important;
-    }
+    [data-testid="stSidebar"] div { color: #B8CCE8 !important; }
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {
@@ -145,8 +132,6 @@ def inject_css():
         border-color: rgba(255,255,255,0.1) !important;
         margin: 0.8rem 0 !important;
     }
-
-    /* ── Toggle: sidebar (always white text on navy) ── */
     [data-testid="stSidebar"] [data-testid="stToggle"] {
         background: rgba(255,255,255,0.08);
         border: 1px solid rgba(255,255,255,0.2);
@@ -156,19 +141,16 @@ def inject_css():
     [data-testid="stSidebar"] [data-testid="stToggle"] p {
         color: #FFFFFF !important;
         font-weight: 600 !important;
-        font-size: 0.88rem !important;
     }
 
-    /* ── Toggle: main content, light theme ── */
-    .main [data-testid="stToggle"] {
-        border-radius: 10px;
-        padding: 0.6rem 1rem;
-        border: 1.5px solid rgba(27,58,107,0.2);
-    }
+    /* ════════════════════════════════════════════════════
+       MAIN CONTENT — use Streamlit CSS variables
+       so colours adapt automatically to light/dark theme
+    ════════════════════════════════════════════════════ */
 
-    /* ── Page titles ── */
+    /* Page titles — accent amber underline, text follows theme */
     [data-testid="stHeadingWithActionElements"] h1 {
-        color: #1B3A6B !important;
+        color: var(--text-color) !important;
         font-weight: 700 !important;
         font-size: 1.8rem !important;
         letter-spacing: -0.02em;
@@ -177,53 +159,51 @@ def inject_css():
         margin-bottom: 0.2rem !important;
     }
     [data-testid="stHeadingWithActionElements"] h2 {
-        color: #1B3A6B !important;
+        color: var(--text-color) !important;
         font-weight: 600 !important;
         font-size: 1.15rem !important;
     }
     [data-testid="stHeadingWithActionElements"] h3 {
-        color: #2E6CB8 !important;
+        color: var(--text-color) !important;
         font-weight: 600 !important;
         font-size: 1rem !important;
     }
 
-    /* Dark theme: lighten headings so they stay readable */
-    @media (prefers-color-scheme: dark) {
-        [data-testid="stHeadingWithActionElements"] h1 { color: #6FA3E0 !important; }
-        [data-testid="stHeadingWithActionElements"] h2 { color: #6FA3E0 !important; }
-        [data-testid="stHeadingWithActionElements"] h3 { color: #A0C4F1 !important; }
-    }
-
-    /* ── Metric cards ── */
+    /* Metric cards — border follows theme bg */
     [data-testid="stMetric"] {
         border-top: 3px solid #F5A623 !important;
         border-radius: 12px !important;
         padding: 1.1rem 1.3rem !important;
+        background: var(--background-color) !important;
+        border-left: 1px solid rgba(128,128,128,0.2) !important;
+        border-right: 1px solid rgba(128,128,128,0.2) !important;
+        border-bottom: 1px solid rgba(128,128,128,0.2) !important;
         transition: box-shadow 0.2s;
     }
-    /* Light */
-    @media (prefers-color-scheme: light) {
-        [data-testid="stMetric"] {
-            background: #FFFFFF !important;
-            border: 1px solid #E2EAF4 !important;
-            border-top: 3px solid #F5A623 !important;
-            box-shadow: 0 1px 6px rgba(27,58,107,0.07) !important;
-        }
-        [data-testid="stMetricLabel"] > div { color: #8492A6 !important; }
-        [data-testid="stMetricValue"] > div { color: #1B3A6B !important; }
+    [data-testid="stMetricLabel"] > div {
+        color: var(--text-color) !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        opacity: 0.65;
     }
-    /* Dark */
-    @media (prefers-color-scheme: dark) {
-        [data-testid="stMetric"] {
-            background: rgba(255,255,255,0.05) !important;
-            border: 1px solid rgba(255,255,255,0.1) !important;
-            border-top: 3px solid #F5A623 !important;
-        }
-        [data-testid="stMetricLabel"] > div { color: #8AABB8 !important; }
-        [data-testid="stMetricValue"] > div { color: #E8F0FB !important; }
+    [data-testid="stMetricValue"] > div {
+        color: var(--text-color) !important;
+        font-size: 1.75rem !important;
+        font-weight: 700 !important;
+        letter-spacing: -0.02em !important;
     }
 
-    /* ── Buttons ── */
+    /* Toggle in main content */
+    .main [data-testid="stToggle"] {
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
+        border: 1.5px solid rgba(128,128,128,0.25);
+        background: var(--background-color);
+    }
+
+    /* Buttons */
     .stButton > button {
         background: linear-gradient(135deg, #1B3A6B, #2E6CB8) !important;
         color: #FFFFFF !important;
@@ -242,68 +222,43 @@ def inject_css():
         transform: translateY(-1px) !important;
     }
 
-    /* ── Alert boxes ── */
+    /* Alert boxes */
     [data-testid="stAlert"] {
         border-radius: 10px !important;
-        border: none !important;
         font-size: 0.88rem !important;
     }
-    div[data-baseweb="notification"] {
-        border-radius: 10px !important;
-    }
 
-    /* ── Plotly chart wrapper ── */
+    /* Plotly chart wrapper */
     [data-testid="stPlotlyChart"] > div {
         border-radius: 14px !important;
         overflow: hidden !important;
-    }
-    @media (prefers-color-scheme: light) {
-        [data-testid="stPlotlyChart"] > div {
-            box-shadow: 0 1px 8px rgba(27,58,107,0.08) !important;
-            background: #FFFFFF !important;
-        }
-    }
-    @media (prefers-color-scheme: dark) {
-        [data-testid="stPlotlyChart"] > div {
-            box-shadow: 0 1px 8px rgba(0,0,0,0.3) !important;
-        }
+        box-shadow: 0 1px 8px rgba(0,0,0,0.1) !important;
     }
 
-    /* ── DataFrame ── */
-    [data-testid="stDataFrame"] {
+    /* DataFrame & Expander */
+    [data-testid="stDataFrame"],
+    [data-testid="stExpander"] {
         border-radius: 12px !important;
         overflow: hidden !important;
     }
 
-    /* ── Expander ── */
-    [data-testid="stExpander"] {
-        border-radius: 12px !important;
-    }
-    @media (prefers-color-scheme: light) {
-        [data-testid="stExpander"] {
-            background: #FFFFFF !important;
-            border: 1px solid #E2EAF4 !important;
-            box-shadow: 0 1px 6px rgba(27,58,107,0.06) !important;
-        }
-    }
-
-    /* ── Multiselect tags ── */
+    /* Multiselect tags */
     [data-baseweb="tag"] {
-        background-color: #1B3A6B !important;
+        background-color: #2E6CB8 !important;
         border-radius: 6px !important;
     }
-    [data-baseweb="tag"] span {
-        color: #FFFFFF !important;
-    }
+    [data-baseweb="tag"] span { color: #FFFFFF !important; }
 
-    /* ── Caption ── */
+    /* Caption */
     [data-testid="stCaptionContainer"] p {
         font-size: 0.78rem !important;
+        opacity: 0.7;
     }
 
-    /* ── Spinner ── */
-    .stSpinner > div {
-        border-top-color: #2E6CB8 !important;
-    }
+    /* Spinner */
+    .stSpinner > div { border-top-color: #2E6CB8 !important; }
+
+    /* Divider */
+    hr { margin: 1rem 0 !important; }
     </style>
     """, unsafe_allow_html=True)
