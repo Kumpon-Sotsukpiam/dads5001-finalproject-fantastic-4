@@ -7,8 +7,10 @@ Requires AI mode to be enabled (set on the Home page).
 
 import streamlit as st
 from utils.rag import ask_rag
+from utils.theme import inject_css
 
 st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="wide")
+inject_css()
 st.title("🤖 AI Assistant (RAG Mode)")
 st.caption("MongoDB Text Search + Groq llama-3.1-8b · Data: Traffy Fondue Jul-Dec 2025")
 

@@ -7,6 +7,8 @@ Run:
 """
 
 import streamlit as st
+from utils.theme import inject_css
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(
     page_title="Bangkok Complaints Analytics",
@@ -15,49 +17,91 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+inject_css()
+
 # ── Session state defaults ────────────────────────────────────────────────────
 if "ai_mode" not in st.session_state:
     st.session_state["ai_mode"] = False
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
-# ── Page ──────────────────────────────────────────────────────────────────────
-st.title("🏙️ Bangkok Complaints Analytics")
-st.subheader("Traffy Fondue Dataset · July – December 2025")
+ai_mode_toggle()
 
+# ── Hero section ──────────────────────────────────────────────────────────────
 st.markdown("""
-This application analyses **168,000+ public complaints** reported to Bangkok Metropolitan Administration
-via [Traffy Fondue](https://traffy.in.th/) in the second half of 2025.
+<div style="
+    background: linear-gradient(135deg, #1B3A6B 0%, #2E6CB8 100%);
+    border-radius: 16px;
+    padding: 2.5rem 3rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(27,58,107,0.2);
+">
+    <h1 style="color:#FFFFFF !important; border:none; padding:0; margin:0; font-size:2.2rem;">
+        🏙️ Bangkok Complaints Analytics
+    </h1>
+    <p style="color:#B0D0F0; margin:0.5rem 0 0 0; font-size:1.05rem;">
+        Traffy Fondue Dataset &nbsp;·&nbsp; July – December 2025 &nbsp;·&nbsp; 168,589 complaints
+    </p>
+</div>
+""", unsafe_allow_html=True)
 
-**Data pipeline:**
-```
-CSV files (Jul–Dec 2025)
-  → Pandas + DuckDB  (clean & transform)
-  → MongoDB Atlas    (raw storage + vector embeddings)
-  → Snowflake        (analytics warehouse)
-  → Streamlit + Plotly (this app)
-```
-
-**Navigate using the sidebar** to explore:
-| Page | Description |
-|------|-------------|
-| 📊 Dashboard | KPIs, trends, and district breakdowns (MongoDB + DuckDB) |
-| 🗺️ Map | Geographic distribution of complaints |
-| 🔍 Explorer | Filter and inspect raw records |
-| ❄️ Snowflake Analytics | Pre-aggregated analytics from Snowflake warehouse |
-| 🤖 AI Assistant | RAG-powered Q&A about Bangkok complaints |
-""")
-
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Tickets (Jul–Dec)", "168,589")
-col2.metric("Districts Covered", "50")
-col3.metric("Completion Rate", "66.2%")
+# ── KPI cards ─────────────────────────────────────────────────────────────────
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("🎫 Total Tickets",     "168,589")
+c2.metric("🏘️ Districts Covered", "50")
+c3.metric("✅ Completion Rate",   "66.2%")
+c4.metric("⭐ Avg Satisfaction",  "3.8 / 5")
 
 st.divider()
 
-mode = st.toggle("🤖 Enable AI Mode (RAG Assistant)", value=st.session_state["ai_mode"])
+# ── Story flow ────────────────────────────────────────────────────────────────
+st.subheader("📖 How to explore this app")
+
+cols = st.columns(5)
+pages = [
+    ("📊", "Dashboard",          "Start here — KPIs, monthly trends, and district overview"),
+    ("🗺️", "Map",                "See where complaints are concentrated geographically"),
+    ("🔍", "Explorer",           "Filter and drill into raw complaint records"),
+    ("❄️", "Snowflake Analytics","Deep-dive performance: resolution time, reopen rates, scorecard"),
+    ("🤖", "AI Assistant",       "Ask questions about Bangkok complaints in natural language"),
+]
+for col, (icon, title, desc) in zip(cols, pages):
+    col.markdown(f"""
+    <div style="
+        background:#FFFFFF;
+        border:1px solid #D6E4F0;
+        border-top:4px solid #F5A623;
+        border-radius:10px;
+        padding:1rem;
+        text-align:center;
+        height:160px;
+        box-shadow:0 2px 8px rgba(27,58,107,0.06);
+    ">
+        <div style="font-size:2rem;">{icon}</div>
+        <div style="font-weight:700;color:#1B3A6B;margin:0.3rem 0 0.4rem;">{title}</div>
+        <div style="font-size:0.78rem;color:#7F8C8D;line-height:1.4;">{desc}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.divider()
+
+# ── Data pipeline ─────────────────────────────────────────────────────────────
+st.subheader("⚙️ Data Pipeline")
+st.markdown("""
+<div style="background:#FFFFFF;border:1px solid #D6E4F0;border-radius:12px;padding:1.2rem 2rem;">
+<code style="color:#1B3A6B;font-size:0.9rem;">
+CSV files (Jul–Dec 2025) &nbsp;→&nbsp; Pandas + DuckDB &nbsp;→&nbsp; MongoDB Atlas &nbsp;→&nbsp; Snowflake &nbsp;→&nbsp; Streamlit + Plotly
+</code>
+</div>
+""", unsafe_allow_html=True)
+
+st.divider()
+
+# ── AI mode toggle ────────────────────────────────────────────────────────────
+st.subheader("🤖 AI Mode")
+mode = st.toggle("Enable AI Mode", value=st.session_state["ai_mode"], key="home_ai_toggle")
 st.session_state["ai_mode"] = mode
 if mode:
-    st.success("AI mode ON — navigate to **🤖 AI Assistant** in the sidebar.")
+    st.success("AI mode **ON** — AI insight buttons are now active on every page.")
 else:
-    st.info("AI mode OFF — all pages show analytics without LLM calls.")
+    st.info("AI mode **OFF** — analytics-only view. Toggle ON to unlock AI insights on each page.")

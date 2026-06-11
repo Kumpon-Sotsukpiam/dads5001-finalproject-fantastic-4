@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from utils.queries import (
+from utils.theme import inject_css
     get_district_summary,
     get_monthly_trend,
     get_weekly_trend,
@@ -19,6 +20,7 @@ from utils.rag import ai_insight
 from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
+inject_css()
 st.title("📊 Analytics Dashboard")
 st.caption("Source: MongoDB + DuckDB · Data: Traffy Fondue Jul-Dec 2025")
 
