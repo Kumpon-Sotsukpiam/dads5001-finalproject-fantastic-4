@@ -2,3 +2,5 @@
 .env.example
 venv/
 __pycache__/
+rsa_key.p8
+rsa_key.p8

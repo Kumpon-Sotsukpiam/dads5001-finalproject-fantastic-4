@@ -341,8 +341,8 @@ if not df_summary.empty:
         return "background-color: #ffc7ce; color: #9c0006"
 
     styled = sc_display.style \
-        .applymap(color_completion, subset=["Completion %"]) \
-        .applymap(color_sat,        subset=["Avg ⭐"]) \
+        .map(color_completion, subset=["Completion %"]) \
+        .map(color_sat,        subset=["Avg ⭐"]) \
         .format({
             "Total Tickets":         "{:,.0f}",
             "Completion %":          "{:.1f}%",
@@ -352,7 +352,7 @@ if not df_summary.empty:
         })
     if "Reopen Rate %" in sc_display.columns:
         styled = styled \
-            .applymap(color_reopen, subset=["Reopen Rate %"]) \
+            .map(color_reopen, subset=["Reopen Rate %"]) \
             .format({"Reopen Rate %": "{:.2f}%"})
 
     st.dataframe(styled, use_container_width=True, height=600)
