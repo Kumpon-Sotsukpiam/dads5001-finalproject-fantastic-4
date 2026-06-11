@@ -35,19 +35,19 @@ LIGHT = {
 
 # ── Dark theme palette ────────────────────────────────────────────────────────
 DARK = {
-    "bg":          "#0E1117",
-    "card":        "#1A1F2E",
-    "border":      "#2A3248",
-    "text":        "#E8EDF8",
-    "text_muted":  "#8A9BBF",
+    "bg":          "#000000",
+    "card":        "#0D0D0D",
+    "border":      "#1F1F1F",
+    "text":        "#F0F0F0",
+    "text_muted":  "#888888",
     "heading":     "#7EB3F5",
     "subheading":  "#5A9FE8",
-    "chart_paper": "#1A1F2E",
-    "chart_plot":  "#1E2438",
-    "chart_grid":  "#2A3248",
-    "chart_tick":  "#5A6A8A",
-    "chart_font":  "#C8D6E8",
-    "legend_bg":   "rgba(26,31,46,0.95)",
+    "chart_paper": "#0D0D0D",
+    "chart_plot":  "#111111",
+    "chart_grid":  "#1F1F1F",
+    "chart_tick":  "#555555",
+    "chart_font":  "#E0E0E0",
+    "legend_bg":   "rgba(13,13,13,0.95)",
 }
 
 
@@ -103,6 +103,8 @@ def inject_css():
     """Inject CSS + register Plotly template matching the active theme."""
     global BKK_TEMPLATE
 
+    # Use light palette — background is controlled by .streamlit/config.toml
+    # Users can switch theme via Streamlit's built-in Settings menu (⋮)
     dark = _is_dark()
     p = DARK if dark else LIGHT
 
@@ -115,6 +117,18 @@ def inject_css():
     navy    = "#1B3A6B"
     navy2   = "#2E6CB8"
 
+    # Only inject background override for dark theme (light theme handled by config.toml)
+    bg_override = f"""
+    html, body,
+    .stApp,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    .main, .block-container {{
+        background-color: {p["bg"]} !important;
+        background: {p["bg"]} !important;
+    }}
+    """ if dark else ""
+
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -124,20 +138,12 @@ def inject_css():
         font-family: 'Inter', sans-serif !important;
     }}
 
-    /* ── App background ── */
-    .stApp {{
-        background-color: {p["bg"]} !important;
-    }}
+    {bg_override}
 
     /* ── Main content layout ── */
     .main .block-container {{
         padding: 2rem 2.5rem !important;
         max-width: 1400px !important;
-    }}
-
-    /* ── Default text color ── */
-    .main p, .main span, .main div, .main label {{
-        color: {p["text"]} !important;
     }}
 
     /* ════════════════════════════════════
