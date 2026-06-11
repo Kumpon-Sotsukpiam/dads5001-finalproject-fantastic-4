@@ -15,7 +15,7 @@ import plotly.express as px
 from utils.queries import get_mongo_sample
 from utils.rag import ai_insight
 from utils.ui import ai_mode_toggle
-from utils.theme import inject_css
+from utils.theme import inject_css, BKK_TEMPLATE
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 inject_css()
@@ -140,7 +140,7 @@ with col1:
         state_counts.columns = ["status", "count"]
         fig = px.pie(
             state_counts, values="count", names="status",
-            title="Status Distribution", height=250, template="bkk",
+            title="Status Distribution", height=250, template=BKK_TEMPLATE,
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -154,7 +154,7 @@ with col2:
             labels={"count": "", "type": ""},
             color="count", color_continuous_scale="Blues",
         )
-        fig2.update_layout(template="bkk", coloraxis_showscale=False)
+        fig2.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
 
 # ── Table ─────────────────────────────────────────────────────────────────────

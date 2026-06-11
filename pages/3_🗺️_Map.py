@@ -14,7 +14,7 @@ import plotly.express as px
 from utils.queries import get_map_data
 from utils.rag import ai_insight
 from utils.ui import ai_mode_toggle
-from utils.theme import inject_css
+from utils.theme import inject_css, BKK_TEMPLATE
 
 st.set_page_config(page_title="Map", page_icon="🗺️", layout="wide")
 inject_css()
@@ -161,7 +161,7 @@ with col1:
                 "pending":     "#C83232",
                 "other":       "#AAAAAA",
             },
-            height=300, template="bkk",
+            height=300, template=BKK_TEMPLATE,
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -172,10 +172,10 @@ with col2:
         type_counts.columns = ["type", "count"]
         fig2 = px.bar(
             type_counts, x="count", y="type", orientation="h",
-            color="count", color_continuous_scale="Blues", template="bkk",
+            color="count", color_continuous_scale="Blues", template=BKK_TEMPLATE,
             height=300, labels={"count": "Complaints", "type": ""},
         )
-        fig2.update_layout(template="bkk", coloraxis_showscale=False)
+        fig2.update_layout(template=BKK_TEMPLATE, coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
 
 if total_filtered > max_pts:

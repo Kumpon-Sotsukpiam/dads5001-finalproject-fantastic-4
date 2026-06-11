@@ -26,36 +26,50 @@ CHART_COLORS = [
     "#8E44AD", "#16A085", "#E67E22", "#1B3A6B",
 ]
 
-# ── Register custom Plotly template ──────────────────────────────────────────
-_custom_template = go.layout.Template()
-_custom_template.layout = go.Layout(
-    paper_bgcolor="#FFFFFF",
-    plot_bgcolor="#FAFBFD",
-    font=dict(family="Inter, sans-serif", color="#2C3E50", size=12),
-    title=dict(font=dict(color="#1B3A6B", size=15, family="Inter, sans-serif")),
-    xaxis=dict(
-        gridcolor="#E8EDF5", linecolor="#D0D9E8",
-        tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
-        zeroline=False,
-    ),
-    yaxis=dict(
-        gridcolor="#E8EDF5", linecolor="#D0D9E8",
-        tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
-        zeroline=False,
-    ),
-    legend=dict(
-        bgcolor="rgba(255,255,255,0.9)",
-        bordercolor="#E8EDF5", borderwidth=1,
-        font=dict(color="#2C3E50"),
-    ),
-    margin=dict(l=40, r=20, t=40, b=40),
-    colorway=CHART_COLORS,
-)
-pio.templates["bkk"] = _custom_template
+
+def _build_template():
+    """Build and return the BKK Plotly template object."""
+    t = go.layout.Template()
+    t.layout = go.Layout(
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FAFBFD",
+        font=dict(family="Inter, sans-serif", color="#2C3E50", size=12),
+        title=dict(font=dict(color="#1B3A6B", size=15, family="Inter, sans-serif")),
+        xaxis=dict(
+            gridcolor="#E8EDF5", linecolor="#D0D9E8",
+            tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
+            zeroline=False,
+        ),
+        yaxis=dict(
+            gridcolor="#E8EDF5", linecolor="#D0D9E8",
+            tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
+            zeroline=False,
+        ),
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#E8EDF5", borderwidth=1,
+            font=dict(color="#2C3E50"),
+        ),
+        margin=dict(l=40, r=20, t=40, b=40),
+        colorway=CHART_COLORS,
+    )
+    return t
+
+
+# Exported template object — use this directly in chart calls instead of the
+# string "bkk" so it works even if pio.templates hasn't been populated yet.
+BKK_TEMPLATE = _build_template()
+
+# Register once at import time (best-effort; re-registered in inject_css too)
+pio.templates["bkk"] = BKK_TEMPLATE
 pio.templates.default = "bkk"
 
 
 def inject_css():
+    # Re-register template every page load (Streamlit Cloud workers share nothing)
+    pio.templates["bkk"] = BKK_TEMPLATE
+    pio.templates.default = "bkk"
+
     st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
