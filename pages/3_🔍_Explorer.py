@@ -16,12 +16,12 @@ from utils.queries import get_mongo_sample
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 st.title("🔍 Data Explorer")
-st.caption("Source: MongoDB · In-memory DuckDB filtering")
+st.caption("Source: MongoDB · In-memory DuckDB filtering · All records")
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 with st.spinner("Fetching records from MongoDB ..."):
     try:
-        df = get_mongo_sample(limit=5000)
+        df = get_mongo_sample()
     except Exception as e:
         st.error("Failed to connect to MongoDB: {}".format(e))
         st.stop()

@@ -184,8 +184,9 @@ def get_district_problem_heatmap():
 
 # ── MongoDB direct queries ────────────────────────────────────────────────────
 
-@st.cache_data(ttl=3600, show_spinner="Fetching sample from MongoDB ...")
-def get_mongo_sample(limit=2000):
+@st.cache_data(ttl=3600, show_spinner="Fetching data from MongoDB ...")
+def get_mongo_sample(limit=0):
+    """Load records from MongoDB. limit=0 means no limit (all records)."""
     col = get_mongo_collection()
     # Inclusion-only projection (mixed inclusion/exclusion not allowed in MongoDB)
     cursor = col.find(
@@ -198,8 +199,9 @@ def get_mongo_sample(limit=2000):
             "longitude": 1, "latitude": 1, "address": 1,
             "month": 1, "year": 1,
         },
-        limit=limit,
     )
+    if limit and limit > 0:
+        cursor = cursor.limit(limit)
     df = pd.DataFrame(list(cursor))
     if df.empty:
         return df
