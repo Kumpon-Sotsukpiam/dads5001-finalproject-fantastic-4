@@ -303,6 +303,13 @@ def inject_css():
         border-radius: 10px;
         padding: 0.6rem 1rem;
     }}
+    .main [data-testid="stToggle"] p,
+    .main [data-testid="stToggle"] label,
+    .main [data-testid="stToggle"] span {{
+        color: {p["text"]} !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+    }}
 
     /* ════════════════════════════════════
        MISC
