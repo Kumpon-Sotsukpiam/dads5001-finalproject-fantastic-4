@@ -27,28 +27,37 @@ CHART_COLORS = [
 ]
 
 
-def _build_template():
+def _build_template(dark=False):
     """Build and return the BKK Plotly template object."""
+    if dark:
+        paper_bg, plot_bg = "#1E2330", "#252B3B"
+        font_color, grid_color, tick_color = "#C8D6E8", "#2E3A50", "#6A7F9A"
+        legend_bg = "rgba(30,35,48,0.9)"
+    else:
+        paper_bg, plot_bg = "#FFFFFF", "#FAFBFD"
+        font_color, grid_color, tick_color = "#2C3E50", "#E8EDF5", "#8492A6"
+        legend_bg = "rgba(255,255,255,0.9)"
+
     t = go.layout.Template()
     t.layout = go.Layout(
-        paper_bgcolor="#FFFFFF",
-        plot_bgcolor="#FAFBFD",
-        font=dict(family="Inter, sans-serif", color="#2C3E50", size=12),
-        title=dict(font=dict(color="#1B3A6B", size=15, family="Inter, sans-serif")),
+        paper_bgcolor=paper_bg,
+        plot_bgcolor=plot_bg,
+        font=dict(family="Inter, sans-serif", color=font_color, size=12),
+        title=dict(font=dict(color="#4A90D9", size=15, family="Inter, sans-serif")),
         xaxis=dict(
-            gridcolor="#E8EDF5", linecolor="#D0D9E8",
-            tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
+            gridcolor=grid_color, linecolor=grid_color,
+            tickcolor=tick_color, tickfont=dict(color=tick_color),
             zeroline=False,
         ),
         yaxis=dict(
-            gridcolor="#E8EDF5", linecolor="#D0D9E8",
-            tickcolor="#8492A6", tickfont=dict(color="#8492A6"),
+            gridcolor=grid_color, linecolor=grid_color,
+            tickcolor=tick_color, tickfont=dict(color=tick_color),
             zeroline=False,
         ),
         legend=dict(
-            bgcolor="rgba(255,255,255,0.9)",
-            bordercolor="#E8EDF5", borderwidth=1,
-            font=dict(color="#2C3E50"),
+            bgcolor=legend_bg,
+            bordercolor=grid_color, borderwidth=1,
+            font=dict(color=font_color),
         ),
         margin=dict(l=40, r=20, t=40, b=40),
         colorway=CHART_COLORS,
@@ -56,9 +65,8 @@ def _build_template():
     return t
 
 
-# Exported template object — use this directly in chart calls instead of the
-# string "bkk" so it works even if pio.templates hasn't been populated yet.
-BKK_TEMPLATE = _build_template()
+# Exported template object — always light (Plotly charts use white bg)
+BKK_TEMPLATE = _build_template(dark=False)
 
 # Register once at import time (best-effort; re-registered in inject_css too)
 pio.templates["bkk"] = BKK_TEMPLATE
@@ -74,10 +82,9 @@ def inject_css():
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
 
-    /* ── Global ── */
+    /* ── Font (both themes) ── */
     html, body, [class*="css"], .stApp {
         font-family: 'Inter', sans-serif !important;
-        background-color: #F0F4FA !important;
     }
 
     /* ── Main content area ── */
@@ -86,7 +93,19 @@ def inject_css():
         max-width: 1400px !important;
     }
 
-    /* ── Sidebar ── */
+    /* ══════════════════════════════════════
+       LIGHT THEME
+    ══════════════════════════════════════ */
+    @media (prefers-color-scheme: light) {
+        .stApp { background-color: #F0F4FA !important; }
+    }
+    /* Streamlit also adds a class when light theme is forced */
+    [data-theme="light"] .stApp,
+    .stApp[data-theme="light"] {
+        background-color: #F0F4FA !important;
+    }
+
+    /* ── Sidebar (always navy — same in both themes) ── */
     [data-testid="stSidebar"] {
         background: #1B3A6B !important;
         border-right: none !important;
@@ -94,7 +113,6 @@ def inject_css():
     [data-testid="stSidebar"] > div {
         padding-top: 1.5rem;
     }
-    /* Nav links */
     [data-testid="stSidebarNav"] a {
         color: #B8CCE8 !important;
         font-size: 0.88rem !important;
@@ -108,7 +126,6 @@ def inject_css():
         background: rgba(245,166,35,0.18) !important;
         color: #F5A623 !important;
     }
-    /* Sidebar text */
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
@@ -129,7 +146,7 @@ def inject_css():
         margin: 0.8rem 0 !important;
     }
 
-    /* ── Toggle in sidebar ── */
+    /* ── Toggle: sidebar (always white text on navy) ── */
     [data-testid="stSidebar"] [data-testid="stToggle"] {
         background: rgba(255,255,255,0.08);
         border: 1px solid rgba(255,255,255,0.2);
@@ -142,18 +159,11 @@ def inject_css():
         font-size: 0.88rem !important;
     }
 
-    /* ── Toggle in main content ── */
+    /* ── Toggle: main content, light theme ── */
     .main [data-testid="stToggle"] {
-        background: #FFFFFF;
-        border: 1.5px solid #D6E4F0;
         border-radius: 10px;
         padding: 0.6rem 1rem;
-        box-shadow: 0 1px 4px rgba(27,58,107,0.08);
-    }
-    .main [data-testid="stToggle"] p {
-        color: #1B3A6B !important;
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
+        border: 1.5px solid rgba(27,58,107,0.2);
     }
 
     /* ── Page titles ── */
@@ -177,31 +187,40 @@ def inject_css():
         font-size: 1rem !important;
     }
 
+    /* Dark theme: lighten headings so they stay readable */
+    @media (prefers-color-scheme: dark) {
+        [data-testid="stHeadingWithActionElements"] h1 { color: #6FA3E0 !important; }
+        [data-testid="stHeadingWithActionElements"] h2 { color: #6FA3E0 !important; }
+        [data-testid="stHeadingWithActionElements"] h3 { color: #A0C4F1 !important; }
+    }
+
     /* ── Metric cards ── */
     [data-testid="stMetric"] {
-        background: #FFFFFF !important;
-        border: 1px solid #E2EAF4 !important;
         border-top: 3px solid #F5A623 !important;
         border-radius: 12px !important;
         padding: 1.1rem 1.3rem !important;
-        box-shadow: 0 1px 6px rgba(27,58,107,0.07) !important;
         transition: box-shadow 0.2s;
     }
-    [data-testid="stMetric"]:hover {
-        box-shadow: 0 4px 16px rgba(27,58,107,0.13) !important;
+    /* Light */
+    @media (prefers-color-scheme: light) {
+        [data-testid="stMetric"] {
+            background: #FFFFFF !important;
+            border: 1px solid #E2EAF4 !important;
+            border-top: 3px solid #F5A623 !important;
+            box-shadow: 0 1px 6px rgba(27,58,107,0.07) !important;
+        }
+        [data-testid="stMetricLabel"] > div { color: #8492A6 !important; }
+        [data-testid="stMetricValue"] > div { color: #1B3A6B !important; }
     }
-    [data-testid="stMetricLabel"] > div {
-        color: #8492A6 !important;
-        font-size: 0.72rem !important;
-        font-weight: 600 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
-    }
-    [data-testid="stMetricValue"] > div {
-        color: #1B3A6B !important;
-        font-size: 1.75rem !important;
-        font-weight: 700 !important;
-        letter-spacing: -0.02em !important;
+    /* Dark */
+    @media (prefers-color-scheme: dark) {
+        [data-testid="stMetric"] {
+            background: rgba(255,255,255,0.05) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-top: 3px solid #F5A623 !important;
+        }
+        [data-testid="stMetricLabel"] > div { color: #8AABB8 !important; }
+        [data-testid="stMetricValue"] > div { color: #E8F0FB !important; }
     }
 
     /* ── Buttons ── */
@@ -237,23 +256,35 @@ def inject_css():
     [data-testid="stPlotlyChart"] > div {
         border-radius: 14px !important;
         overflow: hidden !important;
-        box-shadow: 0 1px 8px rgba(27,58,107,0.08) !important;
-        background: #FFFFFF !important;
+    }
+    @media (prefers-color-scheme: light) {
+        [data-testid="stPlotlyChart"] > div {
+            box-shadow: 0 1px 8px rgba(27,58,107,0.08) !important;
+            background: #FFFFFF !important;
+        }
+    }
+    @media (prefers-color-scheme: dark) {
+        [data-testid="stPlotlyChart"] > div {
+            box-shadow: 0 1px 8px rgba(0,0,0,0.3) !important;
+        }
     }
 
     /* ── DataFrame ── */
     [data-testid="stDataFrame"] {
         border-radius: 12px !important;
         overflow: hidden !important;
-        box-shadow: 0 1px 8px rgba(27,58,107,0.08) !important;
     }
 
     /* ── Expander ── */
     [data-testid="stExpander"] {
-        background: #FFFFFF !important;
-        border: 1px solid #E2EAF4 !important;
         border-radius: 12px !important;
-        box-shadow: 0 1px 6px rgba(27,58,107,0.06) !important;
+    }
+    @media (prefers-color-scheme: light) {
+        [data-testid="stExpander"] {
+            background: #FFFFFF !important;
+            border: 1px solid #E2EAF4 !important;
+            box-shadow: 0 1px 6px rgba(27,58,107,0.06) !important;
+        }
     }
 
     /* ── Multiselect tags ── */
@@ -265,15 +296,8 @@ def inject_css():
         color: #FFFFFF !important;
     }
 
-    /* ── Divider ── */
-    hr {
-        border-color: #E2EAF4 !important;
-        margin: 1rem 0 !important;
-    }
-
     /* ── Caption ── */
     [data-testid="stCaptionContainer"] p {
-        color: #8492A6 !important;
         font-size: 0.78rem !important;
     }
 
