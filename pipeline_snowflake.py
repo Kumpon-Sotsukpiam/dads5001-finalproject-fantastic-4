@@ -28,12 +28,12 @@ MONGO_URI        = os.getenv("MONGO_URI")
 MONGO_DB         = os.getenv("MONGO_DB", "dads5001")
 MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "bangkok_complaints")
 
-SF_ACCOUNT   = os.getenv("SNOWFLAKE_ACCOUNT")
-SF_USER      = os.getenv("SNOWFLAKE_USER")
-SF_PASSWORD  = os.getenv("SNOWFLAKE_PASSWORD")
-SF_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
-SF_DATABASE  = os.getenv("SNOWFLAKE_DATABASE", "DADS5001")
-SF_SCHEMA    = os.getenv("SNOWFLAKE_SCHEMA", "PUBLIC")
+SF_ACCOUNT          = os.getenv("SNOWFLAKE_ACCOUNT")
+SF_USER             = os.getenv("SNOWFLAKE_USER")
+SF_PRIVATE_KEY_PATH = os.getenv("SNOWFLAKE_PRIVATE_KEY_PATH")
+SF_WAREHOUSE        = os.getenv("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
+SF_DATABASE         = os.getenv("SNOWFLAKE_DATABASE", "DADS5001")
+SF_SCHEMA           = os.getenv("SNOWFLAKE_SCHEMA", "PUBLIC")
 
 
 # ── 1. Pull from MongoDB ──────────────────────────────────────────────────────
@@ -116,15 +116,27 @@ def build_aggregates(df):
     }
 
 
-# ── 3. Snowflake connection ───────────────────────────────────────────────────
+# ── 3. Snowflake connection (key-pair auth) ───────────────────────────────────
 def get_snowflake_conn():
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
+    from cryptography.hazmat.backends import default_backend
+
+    key_path = SF_PRIVATE_KEY_PATH
+    if not key_path or not os.path.exists(key_path):
+        raise FileNotFoundError(
+            "Private key not found at: {}\n"
+            "Set SNOWFLAKE_PRIVATE_KEY_PATH in .env".format(key_path)
+        )
+    with open(key_path, "rb") as f:
+        private_key = load_pem_private_key(f.read(), password=None, backend=default_backend())
+
     return snowflake.connector.connect(
-        account   = SF_ACCOUNT,
-        user      = SF_USER,
-        password  = SF_PASSWORD,
-        warehouse = SF_WAREHOUSE,
-        database  = SF_DATABASE,
-        schema    = SF_SCHEMA,
+        account     = SF_ACCOUNT,
+        user        = SF_USER,
+        private_key = private_key,
+        warehouse   = SF_WAREHOUSE,
+        database    = SF_DATABASE,
+        schema      = SF_SCHEMA,
     )
 
 
@@ -167,7 +179,7 @@ DDL_STATEMENTS = [
     CREATE TABLE IF NOT EXISTS AGG_WEEKLY (
         YEAR            INTEGER,
         WEEK_NUM        INTEGER,
-        WEEK_START      DATE,
+        WEEK_START      VARCHAR(10),
         PROBLEM_TYPE    VARCHAR(200),
         TICKET_COUNT    INTEGER,
         FINISHED_COUNT  INTEGER
@@ -190,9 +202,17 @@ def prep_df_for_snowflake(df):
     """Uppercase columns, convert types for write_pandas compatibility."""
     df = df.copy()
     df.columns = [c.upper() for c in df.columns]
-    # Replace NaN with None for all object columns
-    for col in df.select_dtypes(include="object").columns:
-        df[col] = df[col].where(df[col].notna(), None)
+    # Convert all datetime columns to ISO date strings
+    # (write_pandas serialises them as microsecond integers which Snowflake rejects)
+    for col in df.columns:
+        if hasattr(df[col], "dt") and hasattr(df[col].dt, "strftime"):
+            try:
+                df[col] = df[col].dt.strftime("%Y-%m-%d").where(df[col].notna(), None)
+                continue
+            except Exception:
+                pass
+        if df[col].dtype == object:
+            df[col] = df[col].where(df[col].notna(), None)
     return df
 
 

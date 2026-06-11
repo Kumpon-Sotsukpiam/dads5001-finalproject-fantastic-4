@@ -41,9 +41,10 @@ CSV files (Jul–Dec 2025)
 **Navigate using the sidebar** to explore:
 | Page | Description |
 |------|-------------|
-| 📊 Dashboard | KPIs, trends, and district breakdowns |
+| 📊 Dashboard | KPIs, trends, and district breakdowns (MongoDB + DuckDB) |
 | 🗺️ Map | Geographic distribution of complaints |
 | 🔍 Explorer | Filter and inspect raw records |
+| ❄️ Snowflake Analytics | Pre-aggregated analytics from Snowflake warehouse |
 | 🤖 AI Assistant | RAG-powered Q&A about Bangkok complaints |
 """)
 

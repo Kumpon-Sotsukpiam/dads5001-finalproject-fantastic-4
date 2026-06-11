@@ -37,14 +37,32 @@ def get_mongo_collection():
 
 def get_snowflake_conn():
     """
-    Return a Snowflake connection.
-    Used only by pipeline_snowflake.py — NOT used by the Streamlit app.
+    Return a Snowflake connection using key-pair authentication (no MFA).
+    Supports both local (private key file path) and Streamlit Cloud
+    (private key content stored in secrets).
     """
     import snowflake.connector
+    from cryptography.hazmat.primitives.serialization import load_pem_private_key
+    from cryptography.hazmat.backends import default_backend
+
+    # Try to load private key — from file path first, then from secret content
+    private_key_path    = _get_secret("SNOWFLAKE_PRIVATE_KEY_PATH")
+    private_key_content = _get_secret("SNOWFLAKE_PRIVATE_KEY")
+
+    if private_key_path and os.path.exists(private_key_path):
+        with open(private_key_path, "rb") as f:
+            pem_data = f.read()
+    elif private_key_content:
+        pem_data = private_key_content.encode() if isinstance(private_key_content, str) else private_key_content
+    else:
+        raise ValueError("No Snowflake private key found. Set SNOWFLAKE_PRIVATE_KEY_PATH or SNOWFLAKE_PRIVATE_KEY.")
+
+    private_key = load_pem_private_key(pem_data, password=None, backend=default_backend())
+
     return snowflake.connector.connect(
         account         = _get_secret("SNOWFLAKE_ACCOUNT"),
         user            = _get_secret("SNOWFLAKE_USER"),
-        password        = _get_secret("SNOWFLAKE_PASSWORD"),
+        private_key     = private_key,
         warehouse       = _get_secret("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH"),
         database        = _get_secret("SNOWFLAKE_DATABASE",  "DADS5001"),
         schema          = _get_secret("SNOWFLAKE_SCHEMA",    "PUBLIC"),

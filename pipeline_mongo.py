@@ -104,9 +104,15 @@ def clean_with_duckdb(df):
 
 # ── 3. Upsert to MongoDB ──────────────────────────────────────────────────────
 def upsert_to_mongo(df, collection):
+    # Drop heavy fields not needed by the app (saves ~40% storage)
+    DROP_COLS = ["photo", "photo_after", "coords", "address",
+                 "problemtype_tag", "type_full", "province",
+                 "organization", "organization_action",
+                 "timestamp_inprogress", "timestamp_finished", "last_activity"]
+    df = df.drop(columns=[c for c in DROP_COLS if c in df.columns])
+
     # Convert timestamps to strings to avoid BSON issues
-    for col in ["timestamp", "timestamp_inprogress", "timestamp_finished",
-                "last_activity", "week_start"]:
+    for col in ["timestamp", "week_start"]:
         if col in df.columns:
             df[col] = df[col].astype(str).replace("NaT", None).replace("None", None)
 
