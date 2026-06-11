@@ -17,7 +17,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-inject_css()
+p = inject_css()  # returns active colour palette
 
 # ── Session state defaults ────────────────────────────────────────────────────
 if "ai_mode" not in st.session_state:
@@ -68,8 +68,8 @@ pages = [
 for col, (icon, title, desc) in zip(cols, pages):
     col.markdown(f"""
     <div style="
-        background: var(--background-color);
-        border: 1px solid rgba(128,128,128,0.2);
+        background: {p['card']};
+        border: 1px solid {p['border']};
         border-top: 4px solid #F5A623;
         border-radius: 10px;
         padding: 1rem;
@@ -78,8 +78,8 @@ for col, (icon, title, desc) in zip(cols, pages):
         box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     ">
         <div style="font-size:2rem;">{icon}</div>
-        <div style="font-weight:700; color: var(--text-color); margin:0.3rem 0 0.4rem;">{title}</div>
-        <div style="font-size:0.78rem; color: var(--text-color); opacity:0.65; line-height:1.4;">{desc}</div>
+        <div style="font-weight:700; color:{p['heading']}; margin:0.3rem 0 0.4rem;">{title}</div>
+        <div style="font-size:0.78rem; color:{p['text_muted']}; line-height:1.4;">{desc}</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -87,9 +87,9 @@ st.divider()
 
 # ── Data pipeline ─────────────────────────────────────────────────────────────
 st.subheader("⚙️ Data Pipeline")
-st.markdown("""
-<div style="background:var(--background-color);border:1px solid rgba(128,128,128,0.2);border-radius:12px;padding:1.2rem 2rem;">
-<code style="color:var(--text-color);font-size:0.9rem;">
+st.markdown(f"""
+<div style="background:{p['card']};border:1px solid {p['border']};border-radius:12px;padding:1.2rem 2rem;">
+<code style="color:{p['text']};font-size:0.9rem;">
 CSV files (Jul–Dec 2025) &nbsp;→&nbsp; Pandas + DuckDB &nbsp;→&nbsp; MongoDB Atlas &nbsp;→&nbsp; Snowflake &nbsp;→&nbsp; Streamlit + Plotly
 </code>
 </div>
@@ -99,10 +99,10 @@ st.divider()
 
 # ── AI mode toggle ────────────────────────────────────────────────────────────
 st.subheader("🤖 AI Mode")
-st.markdown("""
+st.markdown(f"""
 <div style="
-    background: var(--background-color);
-    border: 1px solid rgba(128,128,128,0.2);
+    background: {p['card']};
+    border: 1px solid {p['border']};
     border-radius: 12px;
     padding: 1.2rem 1.5rem;
     margin-bottom: 0.5rem;
