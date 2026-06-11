@@ -31,9 +31,13 @@ def get_groq_client():
 
 def text_search(query, top_k=TOP_K):
     """
-    MongoDB text search on comment + problem_type + district fields.
-    Falls back to a simple regex search if text index not available.
+    Search MongoDB for relevant complaints.
+    Strategy:
+      1. Try MongoDB $text search (works for Thai via whitespace tokenizer)
+      2. If empty result, fall back to regex on all meaningful fields
+      3. If still empty, return random sample so LLM has some context
     """
+    import re
     col = get_mongo_collection()
     projection = {
         "_id": 0, "ticket_id": 1, "problem_type": 1,
@@ -42,6 +46,7 @@ def text_search(query, top_k=TOP_K):
         "star": 1, "timestamp": 1,
     }
 
+    # Step 1: MongoDB $text search
     try:
         cursor = col.find(
             {"$text": {"$search": query}},
@@ -54,21 +59,28 @@ def text_search(query, top_k=TOP_K):
     except Exception:
         pass
 
-    # Fallback: regex search
-    keywords = query.replace("?", "").split()[:3]
-    fallback_filter = {}
-    if keywords:
-        import re
-        pattern = "|".join(re.escape(k) for k in keywords)
+    # Step 2: Regex fallback — split query into tokens (handles Thai)
+    # Thai words don't have spaces so search whole query + individual words
+    tokens = [query.strip()] + [t for t in query.replace("?", "").split() if len(t) > 1]
+    tokens = list(dict.fromkeys(tokens))  # deduplicate, preserve order
+    pattern = "|".join(re.escape(t) for t in tokens[:5])
+
+    if pattern:
         fallback_filter = {
             "$or": [
                 {"comment":      {"$regex": pattern, "$options": "i"}},
                 {"problem_type": {"$regex": pattern, "$options": "i"}},
                 {"district":     {"$regex": pattern, "$options": "i"}},
+                {"subdistrict":  {"$regex": pattern, "$options": "i"}},
             ]
         }
-    cursor = col.find(fallback_filter, projection, limit=top_k)
-    return [dict(d, score=0.0) for d in cursor]
+        results = list(col.find(fallback_filter, projection, limit=top_k))
+        if results:
+            return results
+
+    # Step 3: Return a random sample so LLM can still answer general questions
+    results = list(col.find({}, projection, limit=top_k))
+    return [dict(d, score=0.0) for d in results]
 
 
 def build_context(docs):

@@ -10,7 +10,7 @@ from utils.rag import ask_rag
 
 st.set_page_config(page_title="AI Assistant", page_icon="🤖", layout="wide")
 st.title("🤖 AI Assistant (RAG Mode)")
-st.caption("MongoDB Text Search + Gemini 1.5 Flash · Data: Traffy Fondue Jul-Dec 2025")
+st.caption("MongoDB Text Search + Groq llama-3.1-8b · Data: Traffy Fondue Jul-Dec 2025")
 
 # ── Guard: AI mode must be ON ─────────────────────────────────────────────────
 if not st.session_state.get("ai_mode", False):
