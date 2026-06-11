@@ -20,8 +20,7 @@ st.set_page_config(
 p = inject_css()  # returns active colour palette
 
 # ── Session state defaults ────────────────────────────────────────────────────
-if "ai_mode" not in st.session_state:
-    st.session_state["ai_mode"] = False
+# NOTE: do NOT set ai_mode here — widget key "ai_mode" owns it via ai_mode_toggle()
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 

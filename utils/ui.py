@@ -10,22 +10,21 @@ import streamlit as st
 def ai_mode_toggle():
     """
     Render AI mode toggle in the sidebar.
-    Persists state across page navigation via session_state.
+    Persists across page navigation.
 
-    Pattern: use st.sidebar.checkbox (not toggle) with explicit value= and
-    write result directly back to ai_mode — no widget key needed.
+    The only reliable pattern in Streamlit:
+    - Use a FIXED key ("ai_mode") directly as the widget key
+    - Never manually assign st.session_state["ai_mode"] after widget is rendered
+    - Initialize with setdefault BEFORE the widget is ever created
     """
-    if "ai_mode" not in st.session_state:
-        st.session_state["ai_mode"] = False
+    # setdefault only sets if key doesn't exist — safe to call every page load
+    st.session_state.setdefault("ai_mode", False)
 
-    new_val = st.sidebar.checkbox(
+    st.sidebar.toggle(
         "🤖 AI Mode",
-        value=st.session_state["ai_mode"],
+        key="ai_mode",          # widget IS the state — same key, same value
         help="Enable AI-powered insights on each page",
     )
-    # Write back every render — this is safe because checkbox has no key
-    st.session_state["ai_mode"] = new_val
-
     if st.session_state["ai_mode"]:
         st.sidebar.caption("✅ AI insights enabled")
     st.sidebar.divider()

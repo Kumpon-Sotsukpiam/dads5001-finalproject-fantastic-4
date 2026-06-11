@@ -18,10 +18,7 @@ st.caption("MongoDB Text Search + Groq llama-3.1-8b · Data: Traffy Fondue Jul-D
 
 # ── Guard: AI mode must be ON ─────────────────────────────────────────────────
 if not st.session_state.get("ai_mode", False):
-    st.warning("AI mode is currently **OFF**. Enable it on the 🏠 Home page.")
-    if st.button("Enable AI Mode now"):
-        st.session_state["ai_mode"] = True
-        st.rerun()
+    st.warning("AI mode is currently **OFF**. Enable it using the toggle in the sidebar.")
     st.stop()
 
 # ── Session state ─────────────────────────────────────────────────────────────
