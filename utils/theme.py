@@ -102,25 +102,34 @@ def inject_css():
     navy   = "#1B3A6B"
     navy2  = "#2E6CB8"
 
-    # Background override: only needed for dark (light handled by config.toml)
-    bg_css = f"""
-    html, body,
-    .stApp, [data-testid="stAppViewContainer"],
-    [data-testid="stMain"], .main, .block-container {{
-        background-color: {p["bg"]} !important;
-    }}
-    /* All text in main area */
-    .main p, .main span, .main div, .main label,
-    .main li, .main td, .main th {{
-        color: {p["text"]} !important;
-    }}
-    """ if dark else f"""
-    /* Light: ensure white card areas read cleanly */
-    .main p, .main span, .main div, .main label,
-    .main li, .main td, .main th {{
-        color: {p["text"]} !important;
-    }}
-    """
+    # Background + text — full override for dark, lighter touch for light
+    if dark:
+        bg_css = f"""
+        :root {{ color-scheme: dark; }}
+        html {{ background-color: {p["bg"]} !important; }}
+        body {{ background-color: {p["bg"]} !important; color: {p["text"]} !important; }}
+        .stApp {{ background-color: {p["bg"]} !important; }}
+        [data-testid="stAppViewContainer"] {{ background-color: {p["bg"]} !important; }}
+        [data-testid="stAppViewContainer"] > section {{ background-color: {p["bg"]} !important; }}
+        [data-testid="stMain"] {{ background-color: {p["bg"]} !important; }}
+        [data-testid="stMain"] > div {{ background-color: {p["bg"]} !important; }}
+        .main {{ background-color: {p["bg"]} !important; }}
+        .block-container {{ background-color: {p["bg"]} !important; }}
+        section[data-testid="stSidebar"] + div {{ background-color: {p["bg"]} !important; }}
+        /* Text contrast */
+        .stApp p, .stApp span, .stApp div, .stApp label,
+        .stApp li, .stApp td, .stApp th, .stApp h1, .stApp h2, .stApp h3 {{
+            color: {p["text"]} !important;
+        }}
+        """
+    else:
+        bg_css = f"""
+        :root {{ color-scheme: light; }}
+        .stApp p, .stApp span, .stApp label,
+        .stApp li, .stApp td, .stApp th {{
+            color: {p["text"]} !important;
+        }}
+        """
 
     st.markdown(f"""
     <style>

@@ -13,12 +13,10 @@ import pydeck as pdk
 import plotly.express as px
 from utils.queries import get_map_data
 from utils.rag import ai_insight
-from utils.ui import ai_mode_toggle
 from utils.theme import inject_css, get_template
 
 st.set_page_config(page_title="Map", page_icon="🗺️", layout="wide")
 p = inject_css()
-ai_mode_toggle()
 t = get_template()
 st.title("🗺️ Geographic Distribution")
 st.caption("Source: MongoDB · GPS coordinates from Traffy Fondue reports")
