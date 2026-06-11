@@ -5,29 +5,28 @@ RAG (Retrieval-Augmented Generation) helpers.
 
   1. MongoDB text search to retrieve relevant complaints
   2. Build context string from top-K retrieved documents
-  3. Call Gemini 1.5 Flash with context + user question
+  3. Call Groq (llama-3.1-8b-instant) with context + user question
 """
 
 import os
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 from utils.db import get_mongo_collection, _get_secret
 from dotenv import load_dotenv
 
 load_dotenv()
 
-GEMINI_MODEL = "gemini-2.0-flash"
-TOP_K        = 8
+GROQ_MODEL = "llama-3.1-8b-instant"
+TOP_K      = 8
 
 
-@st.cache_resource(show_spinner="Connecting to Gemini ...")
-def get_gemini_model():
-    api_key = _get_secret("GOOGLE_API_KEY")
+@st.cache_resource(show_spinner="Connecting to Groq ...")
+def get_groq_client():
+    api_key = _get_secret("GROQ_API_KEY")
     if not api_key:
-        st.error("GOOGLE_API_KEY not set in secrets or .env")
+        st.error("GROQ_API_KEY not set in secrets or .env")
         st.stop()
-    genai.configure(api_key=api_key)
-    return genai.GenerativeModel(GEMINI_MODEL)
+    return Groq(api_key=api_key)
 
 
 def text_search(query, top_k=TOP_K):
@@ -55,7 +54,7 @@ def text_search(query, top_k=TOP_K):
     except Exception:
         pass
 
-    # Fallback: search by problem_type keyword match
+    # Fallback: regex search
     keywords = query.replace("?", "").split()[:3]
     fallback_filter = {}
     if keywords:
@@ -104,7 +103,7 @@ SYSTEM_PROMPT = (
 
 
 def ask_rag(question, chat_history):
-    """Retrieve relevant complaints -> build context -> call Gemini."""
+    """Retrieve relevant complaints -> build context -> call Groq."""
     docs    = text_search(question, TOP_K)
     context = build_context(docs)
 
@@ -113,14 +112,20 @@ def ask_rag(question, chat_history):
         role = "User" if turn["role"] == "user" else "Assistant"
         history_text += "{}: {}\n".format(role, turn["content"])
 
-    prompt = (
-        "{}\n\n"
+    user_message = (
         "CONTEXT (retrieved from Bangkok complaints database):\n{}\n\n"
         "CONVERSATION HISTORY:\n{}"
-        "User: {}\n"
-        "Assistant:"
-    ).format(SYSTEM_PROMPT, context, history_text, question)
+        "User: {}"
+    ).format(context, history_text, question)
 
-    model    = get_gemini_model()
-    response = model.generate_content(prompt)
-    return response.text, docs
+    client = get_groq_client()
+    response = client.chat.completions.create(
+        model=GROQ_MODEL,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user",   "content": user_message},
+        ],
+        temperature=0.3,
+        max_tokens=1024,
+    )
+    return response.choices[0].message.content, docs
