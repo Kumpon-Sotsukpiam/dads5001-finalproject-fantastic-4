@@ -187,10 +187,11 @@ def get_district_problem_heatmap():
 @st.cache_data(ttl=3600, show_spinner="Fetching sample from MongoDB ...")
 def get_mongo_sample(limit=2000):
     col = get_mongo_collection()
+    # Inclusion-only projection (mixed inclusion/exclusion not allowed in MongoDB)
     cursor = col.find(
         {},
         {
-            "_id": 0, "embedding": 0,
+            "_id": 0,
             "comment": 1, "problem_type": 1, "district": 1,
             "subdistrict": 1, "state_en": 1, "timestamp": 1,
             "duration_minutes_total": 1, "star": 1, "ticket_id": 1,
