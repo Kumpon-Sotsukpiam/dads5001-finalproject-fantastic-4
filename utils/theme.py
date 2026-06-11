@@ -1,65 +1,57 @@
 """
 utils/theme.py
 --------------
-Dual-theme design: detects Streamlit light/dark and applies matching styles.
-Sidebar is always navy (brand identity).
-Plotly charts adapt background to match the active theme.
+Dual-theme: Light = white bg / dark text. Dark = pure black bg / light text.
+Sidebar always navy. Plotly charts match active theme.
 """
 
 import streamlit as st
 import plotly.graph_objects as go
 import plotly.io as pio
 
-# ── Brand colours (theme-independent) ────────────────────────────────────────
 CHART_COLORS = [
     "#2E6CB8", "#F5A623", "#27AE60", "#E74C3C",
     "#8E44AD", "#16A085", "#E67E22", "#4A90D9",
 ]
 
-# ── Light theme palette ───────────────────────────────────────────────────────
 LIGHT = {
     "bg":          "#F0F4FA",
     "card":        "#FFFFFF",
-    "border":      "#E2EAF4",
-    "text":        "#1A2233",
-    "text_muted":  "#6B7A99",
+    "border":      "#D0DAF0",
+    "text":        "#0D1B2A",
+    "text_muted":  "#4A5568",
     "heading":     "#1B3A6B",
     "subheading":  "#2E6CB8",
     "chart_paper": "#FFFFFF",
-    "chart_plot":  "#FAFBFD",
-    "chart_grid":  "#E8EDF5",
-    "chart_tick":  "#8492A6",
-    "chart_font":  "#2C3E50",
-    "legend_bg":   "rgba(255,255,255,0.95)",
+    "chart_plot":  "#F8FAFF",
+    "chart_grid":  "#E2EAF4",
+    "chart_tick":  "#6B7A99",
+    "chart_font":  "#0D1B2A",
+    "legend_bg":   "rgba(255,255,255,0.97)",
 }
 
-# ── Dark theme palette ────────────────────────────────────────────────────────
 DARK = {
     "bg":          "#000000",
-    "card":        "#0D0D0D",
-    "border":      "#1F1F1F",
-    "text":        "#F0F0F0",
-    "text_muted":  "#888888",
-    "heading":     "#7EB3F5",
-    "subheading":  "#5A9FE8",
-    "chart_paper": "#0D0D0D",
-    "chart_plot":  "#111111",
-    "chart_grid":  "#1F1F1F",
-    "chart_tick":  "#555555",
-    "chart_font":  "#E0E0E0",
-    "legend_bg":   "rgba(13,13,13,0.95)",
+    "card":        "#111111",
+    "border":      "#2A2A2A",
+    "text":        "#F5F5F5",
+    "text_muted":  "#AAAAAA",
+    "heading":     "#90C4FF",
+    "subheading":  "#6AAFF0",
+    "chart_paper": "#111111",
+    "chart_plot":  "#161616",
+    "chart_grid":  "#2A2A2A",
+    "chart_tick":  "#777777",
+    "chart_font":  "#F5F5F5",
+    "legend_bg":   "rgba(17,17,17,0.97)",
 }
 
 
 def _is_dark() -> bool:
-    """Detect if Streamlit is running in dark mode."""
     try:
-        theme = st.context.theme  # Streamlit >= 1.35
-        return getattr(theme, "base", "light") == "dark"
+        return getattr(st.context.theme, "base", "light") == "dark"
     except Exception:
-        pass
-    # Fallback: check query params / session state hint
-    return st.session_state.get("_dark_mode", False)
+        return st.session_state.get("_dark_mode", False)
 
 
 def _build_plotly_template(p: dict) -> go.layout.Template:
@@ -89,66 +81,63 @@ def _build_plotly_template(p: dict) -> go.layout.Template:
     return t
 
 
-# Build both templates at import time
 _LIGHT_TEMPLATE = _build_plotly_template(LIGHT)
 _DARK_TEMPLATE  = _build_plotly_template(DARK)
 
-# Default export (light) — updated each page load in inject_css()
 BKK_TEMPLATE = _LIGHT_TEMPLATE
 pio.templates["bkk"] = BKK_TEMPLATE
 pio.templates.default = "bkk"
 
 
 def inject_css():
-    """Inject CSS + register Plotly template matching the active theme."""
     global BKK_TEMPLATE
 
-    # Use light palette — background is controlled by .streamlit/config.toml
-    # Users can switch theme via Streamlit's built-in Settings menu (⋮)
     dark = _is_dark()
     p = DARK if dark else LIGHT
-
-    # Update Plotly template to match theme
     BKK_TEMPLATE = _DARK_TEMPLATE if dark else _LIGHT_TEMPLATE
     pio.templates["bkk"] = BKK_TEMPLATE
     pio.templates.default = "bkk"
 
-    accent  = "#F5A623"
-    navy    = "#1B3A6B"
-    navy2   = "#2E6CB8"
+    accent = "#F5A623"
+    navy   = "#1B3A6B"
+    navy2  = "#2E6CB8"
 
-    # Only inject background override for dark theme (light theme handled by config.toml)
-    bg_override = f"""
+    # Background override: only needed for dark (light handled by config.toml)
+    bg_css = f"""
     html, body,
-    .stApp,
-    [data-testid="stAppViewContainer"],
-    [data-testid="stMain"],
-    .main, .block-container {{
+    .stApp, [data-testid="stAppViewContainer"],
+    [data-testid="stMain"], .main, .block-container {{
         background-color: {p["bg"]} !important;
-        background: {p["bg"]} !important;
     }}
-    """ if dark else ""
+    /* All text in main area */
+    .main p, .main span, .main div, .main label,
+    .main li, .main td, .main th {{
+        color: {p["text"]} !important;
+    }}
+    """ if dark else f"""
+    /* Light: ensure white card areas read cleanly */
+    .main p, .main span, .main div, .main label,
+    .main li, .main td, .main th {{
+        color: {p["text"]} !important;
+    }}
+    """
 
     st.markdown(f"""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-    /* ── Font ── */
     html, body, [class*="css"], .stApp {{
         font-family: 'Inter', sans-serif !important;
     }}
 
-    {bg_override}
+    {bg_css}
 
-    /* ── Main content layout ── */
     .main .block-container {{
         padding: 2rem 2.5rem !important;
         max-width: 1400px !important;
     }}
 
-    /* ════════════════════════════════════
-       SIDEBAR — always navy (both themes)
-    ════════════════════════════════════ */
+    /* ── SIDEBAR (always navy) ── */
     [data-testid="stSidebar"] {{
         background: {navy} !important;
         border-right: none !important;
@@ -160,17 +149,16 @@ def inject_css():
         font-weight: 500 !important;
         border-radius: 8px !important;
         padding: 0.4rem 0.8rem !important;
-        transition: all 0.15s ease;
     }}
     [data-testid="stSidebarNav"] a:hover,
     [data-testid="stSidebarNav"] a[aria-selected="true"] {{
-        background: rgba(245,166,35,0.18) !important;
+        background: rgba(245,166,35,0.2) !important;
         color: {accent} !important;
     }}
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] div {{ color: #B8CCE8 !important; }}
+    [data-testid="stSidebar"] div {{ color: #C8D8F0 !important; }}
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {{
@@ -181,46 +169,36 @@ def inject_css():
         text-transform: uppercase !important;
     }}
     [data-testid="stSidebar"] hr {{
-        border-color: rgba(255,255,255,0.1) !important;
-        margin: 0.8rem 0 !important;
+        border-color: rgba(255,255,255,0.12) !important;
     }}
     [data-testid="stSidebar"] [data-testid="stToggle"] {{
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 10px;
-        padding: 0.5rem 0.8rem;
+        background: rgba(255,255,255,0.1) !important;
+        border: 1px solid rgba(255,255,255,0.25) !important;
+        border-radius: 10px !important;
+        padding: 0.5rem 0.8rem !important;
     }}
-    [data-testid="stSidebar"] [data-testid="stToggle"] p {{
+    [data-testid="stSidebar"] [data-testid="stToggle"] p,
+    [data-testid="stSidebar"] [data-testid="stToggle"] span,
+    [data-testid="stSidebar"] [data-testid="stToggle"] label {{
         color: #FFFFFF !important;
         font-weight: 600 !important;
     }}
 
-    /* ════════════════════════════════════
-       HEADINGS
-    ════════════════════════════════════ */
-    [data-testid="stHeadingWithActionElements"] h1 {{
+    /* ── HEADINGS ── */
+    h1, h2, h3,
+    [data-testid="stHeadingWithActionElements"] h1,
+    [data-testid="stHeadingWithActionElements"] h2,
+    [data-testid="stHeadingWithActionElements"] h3 {{
         color: {p["heading"]} !important;
+    }}
+    [data-testid="stHeadingWithActionElements"] h1 {{
         font-weight: 700 !important;
         font-size: 1.8rem !important;
-        letter-spacing: -0.02em;
         border-bottom: 3px solid {accent} !important;
         padding-bottom: 0.5rem !important;
-        margin-bottom: 0.2rem !important;
-    }}
-    [data-testid="stHeadingWithActionElements"] h2 {{
-        color: {p["heading"]} !important;
-        font-weight: 600 !important;
-        font-size: 1.15rem !important;
-    }}
-    [data-testid="stHeadingWithActionElements"] h3 {{
-        color: {p["subheading"]} !important;
-        font-weight: 600 !important;
-        font-size: 1rem !important;
     }}
 
-    /* ════════════════════════════════════
-       METRIC CARDS
-    ════════════════════════════════════ */
+    /* ── METRIC CARDS ── */
     [data-testid="stMetric"] {{
         background: {p["card"]} !important;
         border: 1px solid {p["border"]} !important;
@@ -228,7 +206,6 @@ def inject_css():
         border-radius: 12px !important;
         padding: 1.1rem 1.3rem !important;
         box-shadow: 0 1px 6px rgba(0,0,0,0.08) !important;
-        transition: box-shadow 0.2s;
     }}
     [data-testid="stMetricLabel"] > div {{
         color: {p["text_muted"]} !important;
@@ -241,12 +218,9 @@ def inject_css():
         color: {p["text"]} !important;
         font-size: 1.75rem !important;
         font-weight: 700 !important;
-        letter-spacing: -0.02em !important;
     }}
 
-    /* ════════════════════════════════════
-       BUTTONS
-    ════════════════════════════════════ */
+    /* ── BUTTONS ── */
     .stButton > button {{
         background: linear-gradient(135deg, {navy}, {navy2}) !important;
         color: #FFFFFF !important;
@@ -254,28 +228,24 @@ def inject_css():
         border-radius: 8px !important;
         font-weight: 600 !important;
         padding: 0.5rem 1.4rem !important;
-        box-shadow: 0 2px 8px rgba(27,58,107,0.2) !important;
-        transition: all 0.2s ease !important;
     }}
     .stButton > button:hover {{
         background: linear-gradient(135deg, {accent}, #E8941A) !important;
         color: {navy} !important;
-        box-shadow: 0 4px 14px rgba(245,166,35,0.35) !important;
-        transform: translateY(-1px) !important;
     }}
 
-    /* ════════════════════════════════════
-       CARDS / EXPANDER
-    ════════════════════════════════════ */
+    /* ── EXPANDER ── */
     [data-testid="stExpander"] {{
         background: {p["card"]} !important;
         border: 1px solid {p["border"]} !important;
         border-radius: 12px !important;
     }}
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] p {{
+        color: {p["text"]} !important;
+    }}
 
-    /* ════════════════════════════════════
-       PLOTLY CHART WRAPPER
-    ════════════════════════════════════ */
+    /* ── PLOTLY WRAPPER ── */
     [data-testid="stPlotlyChart"] > div {{
         border-radius: 14px !important;
         overflow: hidden !important;
@@ -283,59 +253,45 @@ def inject_css():
         box-shadow: 0 1px 8px rgba(0,0,0,0.1) !important;
     }}
 
-    /* ════════════════════════════════════
-       DATAFRAME
-    ════════════════════════════════════ */
+    /* ── DATAFRAME ── */
     [data-testid="stDataFrame"] {{
         border-radius: 12px !important;
         overflow: hidden !important;
     }}
 
-    /* ════════════════════════════════════
-       MULTISELECT TAGS
-    ════════════════════════════════════ */
+    /* ── MULTISELECT TAGS ── */
     [data-baseweb="tag"] {{
         background-color: {navy2} !important;
         border-radius: 6px !important;
     }}
     [data-baseweb="tag"] span {{ color: #FFFFFF !important; }}
 
-    /* ════════════════════════════════════
-       TOGGLE (main content)
-    ════════════════════════════════════ */
-    .main [data-testid="stToggle"] {{
-        background: {p["card"]};
-        border: 1.5px solid {p["border"]};
-        border-radius: 10px;
-        padding: 0.6rem 1rem;
-    }}
-    .main [data-testid="stToggle"] p,
-    .main [data-testid="stToggle"] label,
-    .main [data-testid="stToggle"] span {{
+    /* ── SELECT / INPUT text ── */
+    [data-baseweb="select"] div,
+    [data-baseweb="input"] input {{
         color: {p["text"]} !important;
-        font-weight: 600 !important;
-        font-size: 0.95rem !important;
     }}
 
-    /* ════════════════════════════════════
-       MISC
-    ════════════════════════════════════ */
-    [data-testid="stAlert"] {{
-        border-radius: 10px !important;
-        font-size: 0.88rem !important;
-    }}
+    /* ── CAPTION ── */
     [data-testid="stCaptionContainer"] p {{
         color: {p["text_muted"]} !important;
         font-size: 0.78rem !important;
     }}
+
+    /* ── ALERT ── */
+    [data-testid="stAlert"] {{
+        border-radius: 10px !important;
+    }}
+    [data-testid="stAlert"] p {{
+        color: inherit !important;
+    }}
+
     .stSpinner > div {{ border-top-color: {navy2} !important; }}
-    hr {{ margin: 1rem 0 !important; }}
     </style>
     """, unsafe_allow_html=True)
 
-    return p  # return palette so pages can use it for inline HTML
+    return p
 
 
 def get_template():
-    """Return the current BKK_TEMPLATE (updated by inject_css for the active theme)."""
     return BKK_TEMPLATE
