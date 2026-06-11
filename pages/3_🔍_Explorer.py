@@ -1,7 +1,10 @@
 """
 pages/3_Explorer.py
 --------------------
-Raw data explorer - filter with DuckDB, display with Streamlit dataframe.
+Raw data explorer — filter with cascading dropdowns + DuckDB.
+- Default: show ALL records
+- Cascading filters: District → Problem Type → Status
+  Each filter narrows the options of the next filter.
 Source: MongoDB sample (cached).
 """
 
@@ -13,12 +16,12 @@ from utils.queries import get_mongo_sample
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 st.title("🔍 Data Explorer")
-st.caption("Source: MongoDB · In-memory DuckDB filtering · 2,000-record sample")
+st.caption("Source: MongoDB · In-memory DuckDB filtering")
 
 # ── Load data ─────────────────────────────────────────────────────────────────
 with st.spinner("Fetching records from MongoDB ..."):
     try:
-        df = get_mongo_sample(limit=2000)
+        df = get_mongo_sample(limit=5000)
     except Exception as e:
         st.error("Failed to connect to MongoDB: {}".format(e))
         st.stop()
@@ -36,19 +39,11 @@ for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
     if col not in df.columns:
         df[col] = None
 
-# ── Sidebar filters ───────────────────────────────────────────────────────────
+# ── Sidebar: cascading filters ────────────────────────────────────────────────
 with st.sidebar:
     st.header("Filters")
 
-    all_districts = sorted(df["district"].dropna().unique().tolist())
-    sel_districts = st.multiselect("District", all_districts, default=[])
-
-    all_types = sorted(df["problem_type"].dropna().unique().tolist())
-    sel_types = st.multiselect("Problem Type", all_types, default=[])
-
-    all_states = sorted(df["state_en"].dropna().unique().tolist())
-    sel_states = st.multiselect("Status", all_states, default=[])
-
+    # Month range (applies first, narrows everything else)
     month_min = int(df["month"].min()) if df["month"].notna().any() else 7
     month_max = int(df["month"].max()) if df["month"].notna().any() else 12
     month_min = max(month_min, 7)
@@ -57,6 +52,49 @@ with st.sidebar:
         month_min, month_max = 7, 12
     month_range = st.slider("Month range", 7, 12, (month_min, month_max))
 
+    # Dataset after month filter
+    df_after_month = df[df["month"].between(month_range[0], month_range[1])]
+
+    # Filter 1: District — options from full (month-filtered) dataset
+    all_districts = sorted(df_after_month["district"].dropna().unique().tolist())
+    sel_districts = st.multiselect(
+        "District",
+        options=all_districts,
+        default=[],
+        placeholder="All districts",
+    )
+
+    # Dataset after month + district filter
+    if sel_districts:
+        df_after_district = df_after_month[df_after_month["district"].isin(sel_districts)]
+    else:
+        df_after_district = df_after_month
+
+    # Filter 2: Problem Type — only types available in selected districts
+    available_types = sorted(df_after_district["problem_type"].dropna().unique().tolist())
+    sel_types = st.multiselect(
+        "Problem Type",
+        options=available_types,
+        default=[],
+        placeholder="All types",
+    )
+
+    # Dataset after month + district + type filter
+    if sel_types:
+        df_after_type = df_after_district[df_after_district["problem_type"].isin(sel_types)]
+    else:
+        df_after_type = df_after_district
+
+    # Filter 3: Status — only statuses available in selected districts + types
+    available_states = sorted(df_after_type["state_en"].dropna().unique().tolist())
+    sel_states = st.multiselect(
+        "Status",
+        options=available_states,
+        default=[],
+        placeholder="All statuses",
+    )
+
+    # Keyword search
     keyword = st.text_input("Keyword in comment", "")
 
 # ── Build DuckDB filter query ─────────────────────────────────────────────────
@@ -79,7 +117,6 @@ if keyword.strip():
     conditions.append("LOWER(COALESCE(comment, '')) LIKE '%{}%'".format(kw.lower()))
 
 where_clause = " AND ".join(conditions)
-# Sort by month DESC (avoid None timestamp crash)
 sql = "SELECT * FROM df WHERE {} ORDER BY month DESC".format(where_clause)
 
 try:
@@ -100,8 +137,10 @@ with col1:
     if not filtered.empty and "state_en" in filtered.columns:
         state_counts = filtered["state_en"].value_counts().reset_index()
         state_counts.columns = ["status", "count"]
-        fig = px.pie(state_counts, values="count", names="status",
-                     title="Status Distribution", height=250)
+        fig = px.pie(
+            state_counts, values="count", names="status",
+            title="Status Distribution", height=250,
+        )
         st.plotly_chart(fig, use_container_width=True)
 
 with col2:
