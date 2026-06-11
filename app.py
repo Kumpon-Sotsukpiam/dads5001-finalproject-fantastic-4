@@ -109,10 +109,9 @@ st.markdown("""
     margin-bottom:0.5rem;
 ">
 """, unsafe_allow_html=True)
-mode = st.toggle("Enable AI Mode", value=st.session_state["ai_mode"], key="home_ai_toggle")
-st.session_state["ai_mode"] = mode
-if mode:
+st.toggle("Enable AI Mode", key="ai_mode")
+if st.session_state["ai_mode"]:
     st.success("AI mode **ON** — AI insight buttons are now active on every page.")
 else:
-    st.info("AI mode **OFF** — analytics-only view. Toggle ON to unlock AI insights on each page.")
+    st.info("AI mode **OFF** — analytics-only. Toggle ON to unlock AI insights on each page.")
 st.markdown("</div>", unsafe_allow_html=True)
