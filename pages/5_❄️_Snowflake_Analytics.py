@@ -12,6 +12,7 @@ import plotly.graph_objects as go
 import pandas as pd
 from utils.db import get_snowflake_conn
 from utils.rag import ai_insight
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Snowflake Analytics", page_icon="❄️", layout="wide")
 st.title("❄️ Snowflake Deep-Dive Analytics")
@@ -84,6 +85,8 @@ except Exception as e:
     st.stop()
 
 MONTH_MAP = {7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
+
+ai_mode_toggle()
 
 # ── Sidebar filters ───────────────────────────────────────────────────────────
 with st.sidebar:

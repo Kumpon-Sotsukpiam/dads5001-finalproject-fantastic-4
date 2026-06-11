@@ -14,6 +14,7 @@ import duckdb
 import plotly.express as px
 from utils.queries import get_mongo_sample
 from utils.rag import ai_insight
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 st.title("🔍 Data Explorer")
@@ -39,6 +40,8 @@ if "month" in df.columns:
 for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
     if col not in df.columns:
         df[col] = None
+
+ai_mode_toggle()
 
 # ── Sidebar: cascading filters ────────────────────────────────────────────────
 with st.sidebar:

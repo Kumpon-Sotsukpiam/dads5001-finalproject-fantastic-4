@@ -13,6 +13,7 @@ import pydeck as pdk
 import plotly.express as px
 from utils.queries import get_map_data
 from utils.rag import ai_insight
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Map", page_icon="🗺️", layout="wide")
 st.title("🗺️ Geographic Distribution")
@@ -42,6 +43,8 @@ df_all = df_all[
     df_all["latitude"].between(13.4, 14.1) &
     df_all["longitude"].between(100.3, 101.0)
 ]
+
+ai_mode_toggle()
 
 # ── Sidebar: cascading filters ────────────────────────────────────────────────
 with st.sidebar:

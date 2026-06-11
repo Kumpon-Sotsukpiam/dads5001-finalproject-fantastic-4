@@ -16,6 +16,7 @@ from utils.queries import (
     get_resolution_stats,
 )
 from utils.rag import ai_insight
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Analytics Dashboard")
@@ -51,6 +52,8 @@ c3.metric("Completion Rate",     "{}%".format(rate))
 c4.metric("Avg Satisfaction ⭐", "{:.2f} / 5".format(avg_sat))
 
 st.divider()
+
+ai_mode_toggle()
 
 # ── Sidebar filters ───────────────────────────────────────────────────────────
 with st.sidebar:
