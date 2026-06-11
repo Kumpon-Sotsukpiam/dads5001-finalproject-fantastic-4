@@ -163,8 +163,16 @@ def inject_css():
     }
 
     /* ── Toggle (AI mode) ── */
+    [data-testid="stToggle"] {
+        background: #FFFFFF;
+        border: 1px solid #D6E4F0;
+        border-radius: 10px;
+        padding: 0.6rem 1rem;
+        box-shadow: 0 2px 6px rgba(27,58,107,0.06);
+    }
     [data-testid="stToggle"] label {
         font-weight: 600 !important;
+        color: #1B3A6B !important;
     }
 
     /* ── Plotly chart container ── */

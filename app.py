@@ -99,9 +99,19 @@ st.divider()
 
 # ── AI mode toggle ────────────────────────────────────────────────────────────
 st.subheader("🤖 AI Mode")
-mode = st.toggle("Enable AI Mode", value=st.session_state["ai_mode"], key="home_ai_toggle")
-st.session_state["ai_mode"] = mode
+st.markdown("""
+<div style="
+    background:#FFFFFF;
+    border:1px solid #D6E4F0;
+    border-radius:12px;
+    padding:1.2rem 1.5rem;
+    box-shadow:0 2px 8px rgba(27,58,107,0.06);
+    margin-bottom:0.5rem;
+">
+""", unsafe_allow_html=True)
+mode = st.toggle("Enable AI Mode", value=st.session_state["ai_mode"], key="ai_mode")
 if mode:
     st.success("AI mode **ON** — AI insight buttons are now active on every page.")
 else:
     st.info("AI mode **OFF** — analytics-only view. Toggle ON to unlock AI insights on each page.")
+st.markdown("</div>", unsafe_allow_html=True)

@@ -10,22 +10,16 @@ import streamlit as st
 def ai_mode_toggle():
     """
     Render AI mode toggle at the TOP of the sidebar.
-    Call this BEFORE any 'with st.sidebar:' block in each page.
-    Returns current ai_mode value (bool).
+    Uses key='ai_mode' directly so it stays in sync with the Home page toggle.
     """
     if "ai_mode" not in st.session_state:
         st.session_state["ai_mode"] = False
 
-    # Use st.sidebar directly (not 'with') so it renders before other sidebar content
-    mode = st.sidebar.toggle(
+    st.sidebar.toggle(
         "🤖 AI Mode",
-        value=st.session_state["ai_mode"],
-        key="ai_mode_toggle",
+        key="ai_mode",   # same key as Home page — Streamlit syncs automatically
         help="Enable AI-powered insights on each page",
     )
-    st.session_state["ai_mode"] = mode
-    if mode:
+    if st.session_state["ai_mode"]:
         st.sidebar.caption("✅ AI insights enabled")
     st.sidebar.divider()
-
-    return mode
