@@ -89,9 +89,9 @@ st.divider()
 st.subheader("⚙️ Data Pipeline")
 st.markdown(f"""
 <div style="background:{p['card']};border:1px solid {p['border']};border-radius:12px;padding:1.2rem 2rem;">
-<code style="color:{p['text']};font-size:0.9rem;">
+<span style="color:{p['text']};font-size:0.9rem;font-family:'Inter',sans-serif;font-weight:500;">
 CSV files (Jul–Dec 2025) &nbsp;→&nbsp; Pandas + DuckDB &nbsp;→&nbsp; MongoDB Atlas &nbsp;→&nbsp; Snowflake &nbsp;→&nbsp; Streamlit + Plotly
-</code>
+</span>
 </div>
 """, unsafe_allow_html=True)
 
