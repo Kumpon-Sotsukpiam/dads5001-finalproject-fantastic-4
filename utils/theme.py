@@ -102,31 +102,56 @@ def inject_css():
     navy   = "#1B3A6B"
     navy2  = "#2E6CB8"
 
-    # Background + text — full override for dark, lighter touch for light
     if dark:
         bg_css = f"""
-        :root {{ color-scheme: dark; }}
-        html {{ background-color: {p["bg"]} !important; }}
-        body {{ background-color: {p["bg"]} !important; color: {p["text"]} !important; }}
-        .stApp {{ background-color: {p["bg"]} !important; }}
-        [data-testid="stAppViewContainer"] {{ background-color: {p["bg"]} !important; }}
-        [data-testid="stAppViewContainer"] > section {{ background-color: {p["bg"]} !important; }}
-        [data-testid="stMain"] {{ background-color: {p["bg"]} !important; }}
-        [data-testid="stMain"] > div {{ background-color: {p["bg"]} !important; }}
-        .main {{ background-color: {p["bg"]} !important; }}
-        .block-container {{ background-color: {p["bg"]} !important; }}
-        section[data-testid="stSidebar"] + div {{ background-color: {p["bg"]} !important; }}
-        /* Text contrast */
-        .stApp p, .stApp span, .stApp div, .stApp label,
-        .stApp li, .stApp td, .stApp th, .stApp h1, .stApp h2, .stApp h3 {{
+        /* Override Streamlit CSS variables for dark mode */
+        :root, .stApp {{
+            --background-color: {p["bg"]} !important;
+            --secondary-background-color: {p["card"]} !important;
+            --text-color: {p["text"]} !important;
+            color-scheme: dark;
+        }}
+        html, body {{
+            background-color: {p["bg"]} !important;
+            color: {p["text"]} !important;
+        }}
+        .stApp,
+        .stApp > div,
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewContainer"] > section,
+        [data-testid="stMain"],
+        [data-testid="stMain"] > div,
+        .main,
+        .block-container,
+        [data-testid="stVerticalBlock"],
+        [data-testid="stVerticalBlockBorderWrapper"] {{
+            background-color: {p["bg"]} !important;
+        }}
+        /* Text */
+        .stApp, .stApp p, .stApp span, .stApp label,
+        .stApp li, .stApp td, .stApp th,
+        [data-testid="stMarkdownContainer"] p,
+        [data-testid="stMarkdownContainer"] li {{
+            color: {p["text"]} !important;
+        }}
+        /* Input / select backgrounds */
+        [data-baseweb="select"] > div,
+        [data-baseweb="input"] > div,
+        [data-baseweb="textarea"] > div {{
+            background-color: {p["card"]} !important;
             color: {p["text"]} !important;
         }}
         """
     else:
         bg_css = f"""
-        :root {{ color-scheme: light; }}
+        :root, .stApp {{
+            --background-color: {p["bg"]};
+            --secondary-background-color: {p["card"]};
+            --text-color: {p["text"]};
+        }}
         .stApp p, .stApp span, .stApp label,
-        .stApp li, .stApp td, .stApp th {{
+        .stApp li, .stApp td, .stApp th,
+        [data-testid="stMarkdownContainer"] p {{
             color: {p["text"]} !important;
         }}
         """
