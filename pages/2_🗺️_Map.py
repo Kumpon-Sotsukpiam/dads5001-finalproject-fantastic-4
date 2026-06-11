@@ -20,7 +20,7 @@ st.caption("Source: MongoDB · GPS coordinates from Traffy Fondue reports")
 # ── Load ALL data once (cached) ───────────────────────────────────────────────
 with st.spinner("Loading map data from MongoDB ..."):
     try:
-        df_all = get_map_data(month=None, problem_type=None, limit=10000)
+        df_all = get_map_data(month=None, problem_type=None, limit=0)
     except Exception as e:
         st.error("Failed to load map data: {}".format(e))
         st.stop()
@@ -33,6 +33,9 @@ if df_all.empty:
 df_all = df_all.copy()
 df_all["latitude"]  = pd.to_numeric(df_all.get("latitude"),  errors="coerce")
 df_all["longitude"] = pd.to_numeric(df_all.get("longitude"), errors="coerce")
+# Coerce month to numeric for reliable comparisons
+if "month" in df_all.columns:
+    df_all["month"] = pd.to_numeric(df_all["month"], errors="coerce")
 df_all = df_all.dropna(subset=["latitude", "longitude"])
 df_all = df_all[
     df_all["latitude"].between(13.4, 14.1) &
@@ -84,7 +87,7 @@ if sel_type != "All" and "problem_type" in df.columns:
 total_filtered = len(df)
 
 # Limit points for map rendering only (doesn't affect charts)
-df_map = df.head(max_pts)
+df_map = df.head(max_pts).copy()
 
 if df_map.empty:
     st.warning("No valid GPS coordinates in filtered data.")

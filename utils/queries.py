@@ -211,7 +211,8 @@ def get_mongo_sample(limit=0):
 
 
 @st.cache_data(ttl=3600, show_spinner="Loading map data ...")
-def get_map_data(month=None, problem_type=None, limit=5000):
+def get_map_data(month=None, problem_type=None, limit=0):
+    """Load map data from MongoDB. limit=0 means no limit (all records)."""
     col  = get_mongo_collection()
     filt = {}
     if month:
@@ -223,10 +224,12 @@ def get_map_data(month=None, problem_type=None, limit=5000):
         filt,
         {
             "_id": 0, "ticket_id": 1, "latitude": 1, "longitude": 1,
-            "problem_type": 1, "district": 1, "state_en": 1, "comment": 1,
+            "problem_type": 1, "district": 1, "state_en": 1,
+            "comment": 1, "month": 1,
         },
-        limit=limit,
     )
+    if limit and limit > 0:
+        cursor = cursor.limit(limit)
     return pd.DataFrame(list(cursor))
 
 

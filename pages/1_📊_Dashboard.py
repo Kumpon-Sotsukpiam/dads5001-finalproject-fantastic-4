@@ -18,10 +18,10 @@ from utils.queries import (
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 st.title("📊 Analytics Dashboard")
-st.caption("Source: Snowflake analytics warehouse · Data: Traffy Fondue Jul-Dec 2025")
+st.caption("Source: MongoDB + DuckDB · Data: Traffy Fondue Jul-Dec 2025")
 
 # ── Load data ─────────────────────────────────────────────────────────────────
-with st.spinner("Loading data from Snowflake ..."):
+with st.spinner("Loading data ..."):
     try:
         district_summary = get_district_summary()
         monthly_trend    = get_monthly_trend()
@@ -29,7 +29,7 @@ with st.spinner("Loading data from Snowflake ..."):
         top_problems     = get_top_problem_types(15)
         resolution_stats = get_resolution_stats()
     except Exception as e:
-        st.error("Failed to load data from Snowflake: {}".format(e))
+        st.error("Failed to load data: {}".format(e))
         st.stop()
 
 # ── KPI Row ───────────────────────────────────────────────────────────────────
@@ -67,8 +67,10 @@ with st.sidebar:
         if not top_problems.empty else []
     sel_types = st.multiselect(
         "Problem Types", all_types,
-        default=all_types[:10] if all_types else [],
+        default=[],
+        placeholder="All types",
     )
+    # Empty = show all types
     if not sel_types:
         sel_types = all_types
 
