@@ -33,9 +33,9 @@ if df_all.empty:
 df_all = df_all.copy()
 df_all["latitude"]  = pd.to_numeric(df_all.get("latitude"),  errors="coerce")
 df_all["longitude"] = pd.to_numeric(df_all.get("longitude"), errors="coerce")
-# Coerce month to numeric for reliable comparisons
+# Coerce month to int for reliable comparisons (MongoDB may return float like 7.0)
 if "month" in df_all.columns:
-    df_all["month"] = pd.to_numeric(df_all["month"], errors="coerce")
+    df_all["month"] = pd.to_numeric(df_all["month"], errors="coerce").astype("Int64")
 df_all = df_all.dropna(subset=["latitude", "longitude"])
 df_all = df_all[
     df_all["latitude"].between(13.4, 14.1) &
@@ -49,7 +49,7 @@ with st.sidebar:
     # Filter 1: Month
     month_map = {7: "Jul", 8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec"}
     available_months = sorted(
-        [m for m in df_all["month"].dropna().unique() if m in month_map]
+        [int(m) for m in df_all["month"].dropna().unique() if int(m) in month_map]
     ) if "month" in df_all.columns else []
     month_options = [None] + available_months
     sel_month = st.selectbox(
@@ -73,7 +73,7 @@ with st.sidebar:
     type_options = ["All"] + available_types
     sel_type = st.selectbox("Problem Type", type_options)
 
-    max_pts = st.slider("Max points on map", 500, 10000, 5000, step=500)
+    max_pts = st.slider("Max points on map", 500, 50000, 10000, step=500)
 
 # ── Apply filters ─────────────────────────────────────────────────────────────
 df = df_all.copy()
