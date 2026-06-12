@@ -348,8 +348,12 @@ def inject_css():
     /* ── SIDEBAR FINAL OVERRIDES (must stay last — they beat the generic
           caption/label rules above, which would otherwise paint sidebar
           text with the dark main-area colours) ── */
-    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {{
-        color: #B8CCE8 !important;
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] span,
+    [data-testid="stSidebar"] small {{
+        color: #E2ECFA !important;
+        opacity: 1 !important;
     }}
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"] span,
