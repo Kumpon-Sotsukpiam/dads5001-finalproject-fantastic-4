@@ -29,16 +29,16 @@ ai_mode_toggle()
 # ── Hero section ──────────────────────────────────────────────────────────────
 st.markdown("""
 <div style="
-    background: linear-gradient(135deg, #1B3A6B 0%, #2E6CB8 100%);
+    background: linear-gradient(135deg, #008A45 0%, #78C222 100%);
     border-radius: 16px;
     padding: 2.5rem 3rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 4px 20px rgba(27,58,107,0.2);
+    box-shadow: 0 4px 20px rgba(0,138,69,0.25);
 ">
     <div style="color:#FFFFFF; font-size:2.2rem; font-weight:800; line-height:1.2; margin-bottom:0.5rem;">
         🏙️ Bangkok Complaints Analytics
     </div>
-    <div style="color:#B0D0F0; font-size:1.05rem;">
+    <div style="color:#EFFAF2; font-size:1.05rem;">
         Traffy Fondue Dataset &nbsp;·&nbsp; July – December 2025 &nbsp;·&nbsp; 168,589 complaints
     </div>
 </div>

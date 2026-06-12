@@ -20,8 +20,8 @@ LIGHT = {
     "border":      "#D0DAF0",
     "text":        "#0D1B2A",
     "text_muted":  "#4A5568",
-    "heading":     "#1B3A6B",
-    "subheading":  "#2E6CB8",
+    "heading":     "#008A45",
+    "subheading":  "#78C222",
     "chart_paper": "#FFFFFF",
     "chart_plot":  "#F8FAFF",
     "chart_grid":  "#E2EAF4",
@@ -36,8 +36,8 @@ DARK = {
     "border":      "#2A2A2A",
     "text":        "#F5F5F5",
     "text_muted":  "#AAAAAA",
-    "heading":     "#90C4FF",
-    "subheading":  "#6AAFF0",
+    "heading":     "#80C342",
+    "subheading":  "#78C222",
     "chart_paper": "#111111",
     "chart_plot":  "#161616",
     "chart_grid":  "#2A2A2A",
@@ -115,6 +115,11 @@ def inject_css():
     navy   = "#1B3A6B"
     navy2  = "#2E6CB8"
 
+    # Sidebar (menu) green palette
+    green_main = "#78C222"   # สีเขียวสด — แคมเปญหลัก
+    green_dark = "#008A45"   # สีเขียวเข้ม — ตัวหนังสือ/กรอบ
+    green_leaf = "#80C342"   # สีเขียวใบไม้ — highlight/active
+
     # Same explicit rules for BOTH themes — Streamlit does not repaint from
     # CSS variables alone, so backgrounds must be set directly.
     bg_css = f"""
@@ -172,10 +177,10 @@ def inject_css():
         max-width: 1400px !important;
     }}
 
-    /* ── SIDEBAR (always navy) ── */
+    /* ── SIDEBAR (green campaign palette) ── */
     [data-testid="stSidebar"] {{
-        background: {navy} !important;
-        border-right: none !important;
+        background: linear-gradient(180deg, {green_dark} 0%, {green_main} 100%) !important;
+        border-right: 1px solid {green_dark} !important;
     }}
     /* Inner sidebar containers must be transparent so the navy shows through */
     [data-testid="stSidebar"] > div,
@@ -188,7 +193,7 @@ def inject_css():
     }}
     [data-testid="stSidebar"] > div {{ padding-top: 1.5rem; }}
     [data-testid="stSidebarNav"] a {{
-        color: #B8CCE8 !important;
+        color: #EAF7EF !important;
         font-size: 0.88rem !important;
         font-weight: 500 !important;
         border-radius: 8px !important;
@@ -200,21 +205,22 @@ def inject_css():
     [data-testid="stSidebarNav"] a:hover,
     [data-testid="stSidebarNav"] a[aria-selected="true"],
     [data-testid="stSidebarNav"] a[aria-current="page"] {{
-        background: rgba(245,166,35,0.2) !important;
-        color: {accent} !important;
+        background: rgba(128,195,66,0.30) !important;
+        color: #FFFFFF !important;
+        border-left: 3px solid {green_leaf} !important;
     }}
     [data-testid="stSidebarNav"] a[aria-selected="true"] span,
     [data-testid="stSidebarNav"] a[aria-current="page"] span {{
-        color: {accent} !important;
+        color: #FFFFFF !important;
     }}
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] p,
     [data-testid="stSidebar"] span,
-    [data-testid="stSidebar"] div {{ color: #C8D8F0 !important; }}
+    [data-testid="stSidebar"] div {{ color: #E3F4E9 !important; }}
     [data-testid="stSidebar"] h1,
     [data-testid="stSidebar"] h2,
     [data-testid="stSidebar"] h3 {{
-        color: {accent} !important;
+        color: #DFF7C8 !important;
         font-size: 0.7rem !important;
         font-weight: 700 !important;
         letter-spacing: 0.1em !important;
@@ -246,7 +252,7 @@ def inject_css():
     [data-testid="stHeadingWithActionElements"] h1 {{
         font-weight: 700 !important;
         font-size: 1.8rem !important;
-        border-bottom: 3px solid {accent} !important;
+        border-bottom: 3px solid {green_leaf} !important;
         padding-bottom: 0.5rem !important;
     }}
 
@@ -371,7 +377,7 @@ def inject_css():
     [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
     [data-testid="stSidebar"] [data-testid="stCaptionContainer"] span,
     [data-testid="stSidebar"] small {{
-        color: #E2ECFA !important;
+        color: #EFFAF2 !important;
         opacity: 1 !important;
     }}
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
@@ -380,8 +386,8 @@ def inject_css():
         color: #FFFFFF !important;
     }}
     [data-testid="stSidebar"] [data-testid="stTooltipIcon"] svg {{
-        color: #B8CCE8 !important;
-        fill: #B8CCE8 !important;
+        color: #D6EFDD !important;
+        fill: #D6EFDD !important;
     }}
     </style>
     """, unsafe_allow_html=True)
