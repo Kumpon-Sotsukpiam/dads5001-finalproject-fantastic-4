@@ -278,7 +278,8 @@ def inject_css():
     }}
 
     /* ── BUTTONS ── */
-    .stButton > button {{
+    .stButton > button,
+    [data-testid="stDownloadButton"] > button {{
         background: linear-gradient(135deg, {navy}, {navy2}) !important;
         color: #FFFFFF !important;
         border: none !important;
@@ -286,8 +287,21 @@ def inject_css():
         font-weight: 600 !important;
         padding: 0.5rem 1.4rem !important;
     }}
-    .stButton > button:hover {{
+    /* Button label lives in a nested <p>/<span> — must be set directly,
+       otherwise the main-area text rule paints it dark */
+    .stButton > button p, .stButton > button span,
+    [data-testid="stDownloadButton"] > button p,
+    [data-testid="stDownloadButton"] > button span {{
+        color: #FFFFFF !important;
+    }}
+    .stButton > button:hover,
+    [data-testid="stDownloadButton"] > button:hover {{
         background: linear-gradient(135deg, {accent}, #E8941A) !important;
+        color: {navy} !important;
+    }}
+    .stButton > button:hover p, .stButton > button:hover span,
+    [data-testid="stDownloadButton"] > button:hover p,
+    [data-testid="stDownloadButton"] > button:hover span {{
         color: {navy} !important;
     }}
 
