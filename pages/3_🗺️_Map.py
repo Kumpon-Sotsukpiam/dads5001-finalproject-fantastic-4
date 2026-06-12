@@ -66,12 +66,27 @@ with st.sidebar:
         format_func=lambda m: "All months" if m is None else month_map.get(int(m), str(m)),
     )
 
-    # Filter 2: Problem Type — options depend on selected month
+    # Filter 2: District — options depend on selected month
     if sel_month is not None and "month" in df_all.columns:
         df_month_filtered = df_all[df_all["month"] == sel_month]
     else:
         df_month_filtered = df_all
 
+    if "district" in df_month_filtered.columns:
+        available_districts = sorted(
+            df_month_filtered["district"].dropna().unique().tolist())
+    else:
+        available_districts = []
+    sel_districts = st.multiselect(
+        "District", available_districts,
+        default=[],
+        placeholder="All districts",
+    )
+    if sel_districts:
+        df_month_filtered = df_month_filtered[
+            df_month_filtered["district"].isin(sel_districts)]
+
+    # Filter 3: Problem Type — options depend on month + district
     if "problem_type" in df_month_filtered.columns:
         available_types = sorted(df_month_filtered["problem_type"].dropna().unique().tolist())
     else:
@@ -104,19 +119,19 @@ with st.sidebar:
     max_pts = st.slider("Max points on map", 500, 50000, 10000, step=500)
 
 # ── Apply filters ─────────────────────────────────────────────────────────────
-# ── วางบนสุดของไฟล์ (หลัง import) ───────────────────────────────────────────
-@st.cache_data(show_spinner=False)
-def apply_filters(df: pd.DataFrame, sel_month, sel_type: str, sel_statuses: tuple):
-    result = df.copy()
-    if sel_month is not None and "month" in result.columns:
-        result = result[result["month"] == sel_month]
-    if sel_type != "All" and "problem_type" in result.columns:
-        result = result[result["problem_type"] == sel_type]
-    if "state_en" in result.columns:
-        result = result[result["state_en"].isin(sel_statuses)]
-    return result
-
-df = apply_filters(df_all, sel_month, sel_type, tuple(sorted(sel_statuses)))
+# NOTE: no st.cache_data here on purpose — caching a function that takes the
+# full DataFrame as an argument forces Streamlit to hash all 168K rows on
+# every rerun and keeps a copy per filter combination in memory. Plain pandas
+# filtering is milliseconds anyway.
+df = df_all
+if sel_month is not None and "month" in df.columns:
+    df = df[df["month"] == sel_month]
+if sel_districts and "district" in df.columns:
+    df = df[df["district"].isin(sel_districts)]
+if sel_type != "All" and "problem_type" in df.columns:
+    df = df[df["problem_type"] == sel_type]
+if "state_en" in df.columns:
+    df = df[df["state_en"].isin(sel_statuses)]
 total_filtered = len(df)
 
 # Limit points for map rendering only (doesn't affect charts)

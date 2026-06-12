@@ -88,7 +88,8 @@ def get_monthly_trend():
     df = _agg([
         {"$match": {"problem_type": {"$ne": None}, "month": {"$ne": None}}},
         {"$group": {
-            "_id": {"year": "$year", "month": "$month", "problem_type": "$problem_type"},
+            "_id": {"year": "$year", "month": "$month",
+                    "district": "$district", "problem_type": "$problem_type"},
             "ticket_count":           {"$sum": 1},
             "finished_count":         {"$sum": {"$cond": [{"$eq": ["$state_en", "finished"]}, 1, 0]}},
             "avg_resolution_minutes": {"$avg": "$duration_minutes_total"},
@@ -105,11 +106,12 @@ def get_monthly_trend():
         return df
     df["year"]         = df["_id"].apply(lambda d: d.get("year"))
     df["month"]        = df["_id"].apply(lambda d: d.get("month"))
+    df["district"]     = df["_id"].apply(lambda d: d.get("district"))
     df["problem_type"] = df["_id"].apply(lambda d: d.get("problem_type"))
     df = df.drop(columns=["_id"])
     df["year"]  = pd.to_numeric(df["year"],  errors="coerce").astype("Int64")
     df["month"] = pd.to_numeric(df["month"], errors="coerce").astype("Int64")
-    return df
+    return _shrink(df, cat_cols=("district", "problem_type"))
 
 
 @st.cache_data(ttl=3600, show_spinner="Aggregating weekly trend ...", persist="disk")

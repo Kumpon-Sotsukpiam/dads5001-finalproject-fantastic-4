@@ -50,6 +50,14 @@ with st.sidebar:
     if not sel_months:
         sel_months = month_options
 
+    all_districts = sorted(monthly_trend["district"].dropna().unique().tolist()) \
+        if not monthly_trend.empty and "district" in monthly_trend.columns else []
+    sel_districts = st.multiselect(
+        "District", all_districts,
+        default=[],
+        placeholder="All districts",
+    )
+
     all_types = sorted(monthly_trend["problem_type"].dropna().unique().tolist()) \
         if not monthly_trend.empty else []
     sel_types = st.multiselect(
@@ -57,11 +65,13 @@ with st.sidebar:
         default=[],
         placeholder="All types",
     )
-    # sel_types == [] means "all types" (no type filter applied)
+    # Empty selection == no filter applied (all districts / all types)
 
 # ── Filtered slice — drives the KPI cards and the monthly trend chart ────────
 if not monthly_trend.empty:
     mt = monthly_trend[monthly_trend["month"].isin(sel_months)]
+    if sel_districts and "district" in mt.columns:
+        mt = mt[mt["district"].isin(sel_districts)]
     if sel_types:
         mt = mt[mt["problem_type"].isin(sel_types)]
 else:
@@ -90,7 +100,7 @@ c1.metric("Total Tickets",       "{:,}".format(total))
 c2.metric("Finished",            "{:,}".format(finished))
 c3.metric("Completion Rate",     "{}%".format(rate))
 c4.metric("Avg Satisfaction ⭐", "{:.2f} / 5".format(avg_sat))
-st.caption("ตัวเลขทั้ง 4 การ์ดเปลี่ยนตาม filter เดือน/ประเภทปัญหาใน sidebar")
+st.caption("ตัวเลขทั้ง 4 การ์ดเปลี่ยนตาม filter เดือน/เขต/ประเภทปัญหาใน sidebar")
 
 st.divider()
 
@@ -178,14 +188,18 @@ else:
 
 col3_l, col3_r = st.columns(2)
 
-# Chart 4: Top 20 Districts
+# Chart 4: Top 20 Districts — derived from the filtered slice (follows filters)
 with col3_l:
     st.subheader("🏘️ Which districts generate the most complaints?")
-    st.caption("Covers the full Jul–Dec period (not affected by sidebar filters).")
-    if not district_summary.empty:
-        ds = district_summary.copy()
-        ds["total_tickets"]    = pd.to_numeric(ds["total_tickets"],    errors="coerce")
-        ds["avg_satisfaction"] = pd.to_numeric(ds["avg_satisfaction"], errors="coerce")
+    if not mt.empty and "district" in mt.columns:
+        ds = mt.groupby("district", observed=True).agg(
+            total_tickets=("ticket_count", "sum"),
+            star_sum=("star_sum",   "sum"),
+            star_count=("star_count", "sum"),
+        ).reset_index()
+        ds["total_tickets"]    = pd.to_numeric(ds["total_tickets"], errors="coerce")
+        ds["avg_satisfaction"] = ds["star_sum"] / ds["star_count"].where(ds["star_count"] > 0)
+        ds = ds.sort_values("total_tickets", ascending=False)
         top20 = ds.head(20).sort_values("total_tickets")
         fig4 = px.bar(
             top20, x="total_tickets", y="district", orientation="h",

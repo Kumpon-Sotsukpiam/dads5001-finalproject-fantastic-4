@@ -106,6 +106,13 @@ with st.sidebar:
     if not sel_months:
         sel_months = avail_months
 
+    districts_in_months = sorted(
+        df_dt[df_dt["month"].isin(sel_months)]["district"].dropna().unique().tolist()
+    )
+    sel_districts = st.multiselect(
+        "District", districts_in_months, default=[], placeholder="All districts",
+    )
+
     types_in_months = sorted(
         df_dt[df_dt["month"].isin(sel_months)]["problem_type"].dropna().unique().tolist()
     )
@@ -122,6 +129,12 @@ dff = df_dt[
     df_dt["month"].isin(sel_months) &
     df_dt["problem_type"].isin(sel_types)
 ].copy()
+if sel_districts:
+    dff = dff[dff["district"].isin(sel_districts)]
+
+# District filter applies to the scorecard source as well
+if sel_districts and not df_summary.empty:
+    df_summary = df_summary[df_summary["district"].isin(sel_districts)]
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 1 — Problem Severity Matrix
