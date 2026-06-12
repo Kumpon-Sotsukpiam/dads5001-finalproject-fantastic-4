@@ -24,26 +24,43 @@ ai_mode_toggle()
 st.title("🔍 Data Explorer")
 st.caption("Source: MongoDB · In-memory DuckDB filtering · All records")
 
-# ── Load ALL data (no limit) ──────────────────────────────────────────────────
-with st.spinner("Fetching records from MongoDB ..."):
-    try:
-        df = get_mongo_sample()
-    except Exception as e:
-        st.error("Failed to connect to MongoDB: {}".format(e))
-        st.stop()
+# ── Load ALL data (cached — โหลดครั้งเดียวต่อ session) ───────────────────────
+@st.cache_data(show_spinner="Fetching records from MongoDB ...")
+def load_data() -> pd.DataFrame:
+    df = get_mongo_sample()
+
+    if df.empty:
+        return df
+
+    if "month" in df.columns:
+        df["month"] = pd.to_numeric(df["month"], errors="coerce").fillna(0).astype(int)
+
+    for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
+        if col not in df.columns:
+            df[col] = None
+
+    return df
+
+
+# ── Cache DuckDB connection + register df — สร้างครั้งเดียวต่อ session ────────
+@st.cache_resource
+def get_duckdb_con(_df: pd.DataFrame) -> duckdb.DuckDBPyConnection:
+    con = duckdb.connect()
+    con.register("df", _df)
+    return con
+
+
+try:
+    df = load_data()
+except Exception as e:
+    st.error("Failed to connect to MongoDB: {}".format(e))
+    st.stop()
 
 if df.empty:
     st.warning("No data returned from MongoDB. Check your connection.")
     st.stop()
 
-# Ensure month column is numeric
-if "month" in df.columns:
-    df["month"] = pd.to_numeric(df["month"], errors="coerce").fillna(0).astype(int)
-
-# Fill missing columns to avoid KeyError
-for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
-    if col not in df.columns:
-        df[col] = None
+con = get_duckdb_con(df)
 
 
 # ── Sidebar: cascading filters ────────────────────────────────────────────────
@@ -121,10 +138,7 @@ where_clause = " AND ".join(conditions)
 sql = "SELECT * FROM df WHERE {} ORDER BY month DESC".format(where_clause)
 
 try:
-    con = duckdb.connect()
-    con.register("df", df)
     filtered = con.execute(sql).df()
-    con.close()
 except Exception as e:
     st.error("Filter error: {}".format(e))
     filtered = df_after_month.copy()
