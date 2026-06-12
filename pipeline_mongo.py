@@ -102,6 +102,39 @@ def clean_with_duckdb(df):
     return cleaned
 
 
+# ── 2.5 Save local Parquet cache (fast path for the Streamlit app) ───────────
+CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_cache")
+
+
+def save_local_cache(df):
+    """
+    Save the cleaned dataset as a compressed Parquet snapshot.
+    The app reads this file FIRST (sub-second, no network) and only falls
+    back to MongoDB when the file is absent. Commit data_cache/ to git so
+    Streamlit Cloud gets the same fast path.
+    """
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    out = df.copy()
+
+    # Keep only columns the app actually uses
+    KEEP = ["ticket_id", "problem_type", "district", "subdistrict", "state_en",
+            "comment", "star", "count_reopen", "duration_minutes_total",
+            "longitude", "latitude", "month", "year", "week_start", "timestamp"]
+    out = out[[c for c in KEEP if c in out.columns]]
+
+    # Truncate long text + stringify timestamps (smaller file, BSON-safe types)
+    if "comment" in out.columns:
+        out["comment"] = out["comment"].fillna("").astype(str).str[:300]
+    for c in ["timestamp", "week_start"]:
+        if c in out.columns:
+            out[c] = out[c].astype(str).replace({"NaT": None, "None": None})
+
+    path = os.path.join(CACHE_DIR, "clean_df.parquet")
+    out.to_parquet(path, index=False, compression="zstd")
+    size_mb = os.path.getsize(path) / 1e6
+    print("[CACHE] Saved {} ({:,} rows, {:.1f} MB)".format(path, len(out), size_mb))
+
+
 # ── 3. Upsert to MongoDB ──────────────────────────────────────────────────────
 def upsert_to_mongo(df, collection):
     # Drop heavy fields not needed by the app (saves ~40% storage)
@@ -139,12 +172,23 @@ def upsert_to_mongo(df, collection):
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    import sys
+
     print("=" * 60)
     print("Bangkok Complaints Pipeline -> MongoDB")
     print("=" * 60)
 
     raw_df   = load_raw(TARGET_FILES)
     clean_df = clean_with_duckdb(raw_df)
+
+    # Always refresh the local Parquet cache (no network needed)
+    save_local_cache(clean_df)
+
+    # `python pipeline_mongo.py --cache-only` regenerates the Parquet snapshot
+    # without re-uploading anything to MongoDB
+    if "--cache-only" in sys.argv:
+        print("[DONE] Local cache refreshed (skipped MongoDB upload).")
+        raise SystemExit(0)
 
     print("[MONGO] Connecting ...")
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=15000)
