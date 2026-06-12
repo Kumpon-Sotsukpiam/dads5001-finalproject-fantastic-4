@@ -389,6 +389,28 @@ def inject_css():
         color: #D6EFDD !important;
         fill: #D6EFDD !important;
     }}
+    /* Sidebar buttons (e.g. AI Assistant example questions) — frosted glass
+       on the green gradient instead of the main-area navy */
+    [data-testid="stSidebar"] .stButton > button {{
+        background: rgba(255,255,255,0.14) !important;
+        border: 1px solid rgba(255,255,255,0.38) !important;
+        box-shadow: none !important;
+    }}
+    [data-testid="stSidebar"] .stButton > button p,
+    [data-testid="stSidebar"] .stButton > button span,
+    [data-testid="stSidebar"] .stButton button [data-testid="stMarkdownContainer"] p {{
+        color: #FFFFFF !important;
+        font-weight: 500 !important;
+    }}
+    [data-testid="stSidebar"] .stButton > button:hover {{
+        background: {green_leaf} !important;
+        border-color: {green_leaf} !important;
+    }}
+    [data-testid="stSidebar"] .stButton > button:hover p,
+    [data-testid="stSidebar"] .stButton > button:hover span,
+    [data-testid="stSidebar"] .stButton button:hover [data-testid="stMarkdownContainer"] p {{
+        color: #00451F !important;
+    }}
     </style>
     """, unsafe_allow_html=True)
 
