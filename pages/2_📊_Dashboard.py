@@ -162,30 +162,6 @@ with col_right:
     else:
         st.info("No data available.")
 
-# Chart 3: Monthly trend by problem type
-st.subheader("📅 How do complaints trend month by month?")
-if not mt.empty:
-    mt_agg = mt.copy()
-    mt_agg["ticket_count"] = pd.to_numeric(mt_agg["ticket_count"], errors="coerce")
-    mt_agg = mt_agg.groupby(["month", "problem_type"])["ticket_count"].sum().reset_index()
-    month_labels = {7:"Jul", 8:"Aug", 9:"Sep", 10:"Oct", 11:"Nov", 12:"Dec"}
-    mt_agg["month_label"] = mt_agg["month"].map(month_labels)
-    fig3 = px.line(
-        mt_agg, x="month_label", y="ticket_count",
-        color="problem_type", markers=True,
-        labels={"ticket_count": "Tickets", "month_label": "Month",
-                "problem_type": "Type"}, template=t,
-        height=400,
-    )
-    st.plotly_chart(fig3, use_container_width=True)
-    _pm = mt_agg.groupby(["month", "month_label"])["ticket_count"].sum().reset_index()
-    if not _pm.empty:
-        _peak_m = _pm.loc[_pm["ticket_count"].idxmax()]
-        st.caption("➡️ Busiest month in selection: {} ({:,.0f} tickets).".format(
-            _peak_m["month_label"], _peak_m["ticket_count"]))
-else:
-    st.info("No data matches selected filters.")
-
 col3_l, col3_r = st.columns(2)
 
 # Chart 4: Top 20 Districts — derived from the filtered slice (follows filters)
@@ -194,25 +170,22 @@ with col3_l:
     if not mt.empty and "district" in mt.columns:
         ds = mt.groupby("district", observed=True).agg(
             total_tickets=("ticket_count", "sum"),
-            star_sum=("star_sum",   "sum"),
-            star_count=("star_count", "sum"),
         ).reset_index()
-        ds["total_tickets"]    = pd.to_numeric(ds["total_tickets"], errors="coerce")
-        ds["avg_satisfaction"] = ds["star_sum"] / ds["star_count"].where(ds["star_count"] > 0)
+        ds["total_tickets"] = pd.to_numeric(ds["total_tickets"], errors="coerce")
         ds = ds.sort_values("total_tickets", ascending=False)
         top20 = ds.head(20).sort_values("total_tickets")
         fig4 = px.bar(
             top20, x="total_tickets", y="district", orientation="h",
-            color="avg_satisfaction",
-            color_continuous_scale="RdYlGn", range_color=[1, 5],
-            labels={"total_tickets": "Tickets", "district": "",
-                    "avg_satisfaction": "Avg ⭐"}, template=t,
+            color="total_tickets", color_continuous_scale="Blues",
+            labels={"total_tickets": "Tickets", "district": ""},
+            template=t,
             height=500,
         )
+        fig4.update_layout(coloraxis_showscale=False)
         st.plotly_chart(fig4, use_container_width=True)
         _top_d = ds.iloc[0]
-        st.caption("➡️ {} tops the list ({:,.0f} tickets, satisfaction {:.2f}⭐).".format(
-            _top_d["district"], _top_d["total_tickets"], _top_d["avg_satisfaction"]))
+        st.caption("➡️ {} tops the list with {:,.0f} tickets.".format(
+            _top_d["district"], _top_d["total_tickets"]))
     else:
         st.info("No data available.")
 
