@@ -126,12 +126,12 @@ Never commit `.env` or `rsa_key.p8`.
 
 ## 👥 Team — Fantastic 4
 
-| Name | Student ID | Responsibility |
+| Student ID | Name | Responsibility |
 |---|---|---|
-| _[name]_ | _[id]_ | _[e.g. Data pipeline & MongoDB]_ |
-| _[name]_ | _[id]_ | _[e.g. Snowflake & analytics pages]_ |
-| _[name]_ | _[id]_ | _[e.g. AI integration & RAG]_ |
-| _[name]_ | _[id]_ | _[e.g. Visualization & theming]_ |
+| 6810422005 | Nanthiwat Tawilpri | _[e.g. Data pipeline & MongoDB]_ |
+| 6810422015 | Rachaphol Vongbuntoon | _[e.g. Snowflake & analytics pages]_ |
+| 6810422024 | Kumpon Sotsukpiam | _[e.g. AI integration & RAG]_ |
+| 6810422027 | Nutdanai Kaewhiran | _[e.g. Visualization & theming]_ |
 
 ## 🙏 Data Source
 
