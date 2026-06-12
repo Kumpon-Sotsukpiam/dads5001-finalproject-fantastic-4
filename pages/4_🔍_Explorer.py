@@ -24,10 +24,16 @@ ai_mode_toggle()
 st.title("🔍 Data Explorer")
 st.caption("Source: MongoDB · In-memory DuckDB filtering · All records")
 
-# ── Load ALL data (no limit) ──────────────────────────────────────────────────
+# ── Month filter FIRST — it is pushed down to MongoDB (server-side $match),
+#    so only the selected months ever travel over the network ────────────────
+with st.sidebar:
+    st.header("Filters")
+    # Default เดือน 7 เพื่อให้โหลดเร็ว — ขยายช่วงได้ตามต้องการ
+    month_range = st.slider("Month range", 7, 12, (7, 7))
+
 with st.spinner("Fetching records from MongoDB ..."):
     try:
-        df = get_mongo_sample()
+        df = get_mongo_sample(month_range[0], month_range[1])
     except Exception as e:
         st.error("Failed to connect to MongoDB: {}".format(e))
         st.stop()
@@ -45,16 +51,11 @@ for col in ["district", "problem_type", "state_en", "comment", "timestamp"]:
     if col not in df.columns:
         df[col] = None
 
+# Already month-filtered server-side
+df_after_month = df
 
 # ── Sidebar: cascading filters ────────────────────────────────────────────────
 with st.sidebar:
-    st.header("Filters")
-
-    # Month range — default เดือน 7 เพื่อให้โหลดเร็ว
-    month_range = st.slider("Month range", 7, 12, (7, 7))
-
-    # Dataset after month filter (used to build downstream options)
-    df_after_month = df[df["month"].between(month_range[0], month_range[1])]
 
     # Filter 1: District — options from month-filtered dataset
     all_districts = sorted(df_after_month["district"].dropna().unique().tolist())

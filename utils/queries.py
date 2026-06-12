@@ -3,8 +3,13 @@ utils/queries.py
 ----------------
 Cached data-fetching functions.
 
-All dashboard queries use MongoDB + in-memory DuckDB aggregation.
-Snowflake integration is handled separately via pipeline_snowflake.py.
+Dashboard aggregations run SERVER-SIDE as MongoDB aggregation pipelines —
+only small summary tables (hundreds of rows) travel over the network,
+instead of all 168K raw documents. This keeps the app fast even on a
+slow connection or a throttled Atlas free tier.
+
+DuckDB + pandas are still used for in-app filtering (Explorer page) and
+in the ETL pipelines (pipeline_mongo.py / pipeline_snowflake.py).
 
 Uses st.cache_data (TTL=1 hour) so repeated reruns skip re-querying.
 """
@@ -15,196 +20,154 @@ import streamlit as st
 from utils.db import get_mongo_collection
 
 
-# ── Raw data fetch from MongoDB ───────────────────────────────────────────────
-
-@st.cache_data(ttl=3600, show_spinner="Loading data from MongoDB ...", persist="disk")
-def _load_all_data():
-    """
-    Pull records from MongoDB with an INCLUSION projection — only the 9 fields
-    the dashboard aggregations actually use. Excluding long text fields
-    (especially `comment`) cuts network transfer by roughly 70-80%.
-    Cached 1 h in memory + persisted to disk (survives app restarts).
-    """
+def _agg(pipeline):
+    """Run an aggregation pipeline and return a DataFrame."""
     col = get_mongo_collection()
-    cursor = col.find(
-        {},
-        {
-            "_id": 0,
-            "district": 1, "problem_type": 1, "state_en": 1,
-            "star": 1, "duration_minutes_total": 1,
-            "month": 1, "year": 1, "week_start": 1, "count_reopen": 1,
-        }
-    )
-    df = pd.DataFrame(list(cursor))
+    return pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
+
+
+# ── Server-side aggregations (MongoDB pipelines) ──────────────────────────────
+
+@st.cache_data(ttl=3600, show_spinner="Aggregating district summary ...", persist="disk")
+def get_district_summary():
+    df = _agg([
+        {"$match": {"district": {"$ne": None}}},
+        {"$group": {
+            "_id": "$district",
+            "total_tickets":          {"$sum": 1},
+            "finished":               {"$sum": {"$cond": [{"$eq": ["$state_en", "finished"]}, 1, 0]}},
+            "in_progress_count":      {"$sum": {"$cond": [{"$eq": ["$state_en", "in_progress"]}, 1, 0]}},
+            "avg_resolution_minutes": {"$avg": "$duration_minutes_total"},
+            "avg_satisfaction":       {"$avg": "$star"},
+        }},
+        {"$sort": {"total_tickets": -1}},
+    ])
     if df.empty:
         return df
+    return df.rename(columns={"_id": "district"})
 
-    # Coerce numerics
-    for c in ["month", "year", "count_reopen"]:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce").astype("Int64")
-    for c in ["star", "duration_minutes_total", "duration_minutes_inprogress",
-              "duration_minutes_finished", "longitude", "latitude"]:
-        if c in df.columns:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
 
+@st.cache_data(ttl=3600, show_spinner="Aggregating monthly trend ...", persist="disk")
+def get_monthly_trend():
+    df = _agg([
+        {"$match": {"problem_type": {"$ne": None}, "month": {"$ne": None}}},
+        {"$group": {
+            "_id": {"year": "$year", "month": "$month", "problem_type": "$problem_type"},
+            "ticket_count":           {"$sum": 1},
+            "avg_resolution_minutes": {"$avg": "$duration_minutes_total"},
+            "avg_star":               {"$avg": "$star"},
+        }},
+        {"$sort": {"_id.year": 1, "_id.month": 1}},
+    ])
+    if df.empty:
+        return df
+    df["year"]         = df["_id"].apply(lambda d: d.get("year"))
+    df["month"]        = df["_id"].apply(lambda d: d.get("month"))
+    df["problem_type"] = df["_id"].apply(lambda d: d.get("problem_type"))
+    df = df.drop(columns=["_id"])
+    df["year"]  = pd.to_numeric(df["year"],  errors="coerce").astype("Int64")
+    df["month"] = pd.to_numeric(df["month"], errors="coerce").astype("Int64")
     return df
 
 
-# ── DuckDB aggregations (mimicking Snowflake tables) ─────────────────────────
-
-@st.cache_data(ttl=3600, show_spinner="Aggregating district summary ...")
-def get_district_summary():
-    df = _load_all_data()
-    if df.empty:
-        return pd.DataFrame()
-    con = duckdb.connect()
-    con.register("facts", df)
-    result = con.execute("""
-        SELECT
-            district,
-            COUNT(*)                                                   AS total_tickets,
-            SUM(CASE WHEN state_en = 'finished'    THEN 1 ELSE 0 END) AS finished,
-            SUM(CASE WHEN state_en = 'in_progress' THEN 1 ELSE 0 END) AS in_progress_count,
-            AVG(duration_minutes_total)                                AS avg_resolution_minutes,
-            AVG(star)                                                  AS avg_satisfaction
-        FROM facts
-        WHERE district IS NOT NULL
-        GROUP BY district
-        ORDER BY total_tickets DESC
-    """).df()
-    con.close()
-    return result
-
-
-@st.cache_data(ttl=3600, show_spinner="Aggregating monthly trend ...")
-def get_monthly_trend():
-    df = _load_all_data()
-    if df.empty:
-        return pd.DataFrame()
-    con = duckdb.connect()
-    con.register("facts", df)
-    result = con.execute("""
-        SELECT
-            CAST(year AS INTEGER)        AS year,
-            CAST(month AS INTEGER)       AS month,
-            problem_type,
-            COUNT(*)                     AS ticket_count,
-            AVG(duration_minutes_total)  AS avg_resolution_minutes,
-            AVG(star)                    AS avg_star
-        FROM facts
-        WHERE problem_type IS NOT NULL
-          AND month IS NOT NULL
-        GROUP BY year, month, problem_type
-        ORDER BY year, month
-    """).df()
-    con.close()
-    return result
-
-
-@st.cache_data(ttl=3600, show_spinner="Aggregating weekly trend ...")
+@st.cache_data(ttl=3600, show_spinner="Aggregating weekly trend ...", persist="disk")
 def get_weekly_trend():
-    df = _load_all_data()
+    df = _agg([
+        {"$match": {"week_start": {"$nin": [None, "None", "NaT", "nan"]}}},
+        {"$group": {
+            "_id": "$week_start",
+            "ticket_count":   {"$sum": 1},
+            "finished_count": {"$sum": {"$cond": [{"$eq": ["$state_en", "finished"]}, 1, 0]}},
+        }},
+        {"$sort": {"_id": 1}},
+    ])
     if df.empty:
-        return pd.DataFrame()
-    con = duckdb.connect()
-    con.register("facts", df)
-    result = con.execute("""
-        SELECT
-            TRY_CAST(week_start AS DATE)                               AS week_start,
-            COUNT(*)                                                   AS ticket_count,
-            SUM(CASE WHEN state_en = 'finished' THEN 1 ELSE 0 END)    AS finished_count
-        FROM facts
-        WHERE week_start IS NOT NULL
-          AND week_start NOT IN ('None', 'NaT', 'nan')
-        GROUP BY week_start
-        ORDER BY week_start
-    """).df()
-    con.close()
-    return result
+        return df
+    return df.rename(columns={"_id": "week_start"})
 
 
-@st.cache_data(ttl=3600, show_spinner="Loading top problem types ...")
+@st.cache_data(ttl=3600, show_spinner="Loading top problem types ...", persist="disk")
 def get_top_problem_types(top_n=15):
-    df = _load_all_data()
+    df = _agg([
+        {"$match": {"problem_type": {"$ne": None}}},
+        {"$group": {"_id": "$problem_type", "total": {"$sum": 1}}},
+        {"$sort": {"total": -1}},
+        {"$limit": int(top_n)},
+    ])
     if df.empty:
-        return pd.DataFrame()
-    con = duckdb.connect()
-    con.register("facts", df)
-    result = con.execute("""
-        SELECT problem_type, COUNT(*) AS total
-        FROM facts
-        WHERE problem_type IS NOT NULL
-        GROUP BY problem_type
-        ORDER BY total DESC
-        LIMIT {}
-    """.format(top_n)).df()
-    con.close()
-    return result
+        return df
+    return df.rename(columns={"_id": "problem_type"})
 
 
-@st.cache_data(ttl=3600, show_spinner="Loading resolution stats ...")
+@st.cache_data(ttl=3600, show_spinner="Loading resolution stats ...", persist="disk")
 def get_resolution_stats():
-    df = _load_all_data()
+    df = _agg([
+        {"$match": {
+            "state_en": "finished",
+            "duration_minutes_total": {"$ne": None},
+            "problem_type": {"$ne": None},
+        }},
+        {"$group": {
+            "_id": "$problem_type",
+            "avg_minutes":  {"$avg": "$duration_minutes_total"},
+            "ticket_count": {"$sum": 1},
+        }},
+        {"$sort": {"avg_minutes": -1}},
+        {"$limit": 20},
+    ])
     if df.empty:
-        return pd.DataFrame()
-    con = duckdb.connect()
-    con.register("facts", df)
-    result = con.execute("""
-        SELECT
-            problem_type,
-            AVG(duration_minutes_total) / 60.0 AS avg_hours,
-            COUNT(*)                            AS ticket_count
-        FROM facts
-        WHERE state_en = 'finished'
-          AND duration_minutes_total IS NOT NULL
-          AND problem_type IS NOT NULL
-        GROUP BY problem_type
-        ORDER BY avg_hours DESC
-        LIMIT 20
-    """).df()
-    con.close()
-    return result
+        return df
+    df = df.rename(columns={"_id": "problem_type"})
+    df["avg_hours"] = pd.to_numeric(df["avg_minutes"], errors="coerce") / 60.0
+    return df.drop(columns=["avg_minutes"])
 
 
-@st.cache_data(ttl=3600, show_spinner="Loading district x problem heatmap ...")
+@st.cache_data(ttl=3600, show_spinner="Loading district x problem heatmap ...", persist="disk")
 def get_district_problem_heatmap():
-    df = _load_all_data()
+    df = _agg([
+        {"$match": {"district": {"$ne": None}, "problem_type": {"$ne": None}}},
+        {"$group": {
+            "_id": {"district": "$district", "problem_type": "$problem_type"},
+            "ticket_count": {"$sum": 1},
+        }},
+    ])
     if df.empty:
-        return pd.DataFrame()
-    con = duckdb.connect()
-    con.register("facts", df)
-    result = con.execute("""
-        SELECT district, problem_type, COUNT(*) AS ticket_count
-        FROM facts
-        WHERE district IS NOT NULL AND problem_type IS NOT NULL
-        GROUP BY district, problem_type
-    """).df()
-    con.close()
-    return result
+        return df
+    df["district"]     = df["_id"].apply(lambda d: d.get("district"))
+    df["problem_type"] = df["_id"].apply(lambda d: d.get("problem_type"))
+    return df.drop(columns=["_id"])
 
 
-# ── MongoDB direct queries ────────────────────────────────────────────────────
+# ── MongoDB record-level queries (Explorer / Map) ─────────────────────────────
 
 @st.cache_data(ttl=3600, show_spinner="Fetching data from MongoDB ...", persist="disk")
-def get_mongo_sample(limit=0):
-    """Load records from MongoDB. limit=0 means no limit (all records)."""
+def get_mongo_sample(month_min=None, month_max=None, limit=0):
+    """
+    Load records for the Explorer page.
+    Filters by month SERVER-SIDE and truncates `comment` to 300 chars in the
+    projection — both drastically cut network transfer.
+    """
     col = get_mongo_collection()
-    # Inclusion-only projection (mixed inclusion/exclusion not allowed in MongoDB)
-    cursor = col.find(
-        {},
-        {
+    match = {}
+    if month_min is not None and month_max is not None:
+        match["month"] = {"$gte": int(month_min), "$lte": int(month_max)}
+
+    pipeline = [
+        {"$match": match},
+        {"$project": {
             "_id": 0,
-            "comment": 1, "problem_type": 1, "district": 1,
+            "ticket_id": 1, "problem_type": 1, "district": 1,
             "subdistrict": 1, "state_en": 1, "timestamp": 1,
-            "duration_minutes_total": 1, "star": 1, "ticket_id": 1,
-            "longitude": 1, "latitude": 1, "address": 1,
+            "duration_minutes_total": 1, "star": 1,
+            "longitude": 1, "latitude": 1,
             "month": 1, "year": 1,
-        },
-    )
+            "comment": {"$substrCP": [{"$ifNull": ["$comment", ""]}, 0, 300]},
+        }},
+    ]
     if limit and limit > 0:
-        cursor = cursor.limit(limit)
-    df = pd.DataFrame(list(cursor))
+        pipeline.append({"$limit": int(limit)})
+
+    df = pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
     if df.empty:
         return df
     if "month" in df.columns:
@@ -214,25 +177,29 @@ def get_mongo_sample(limit=0):
 
 @st.cache_data(ttl=3600, show_spinner="Loading map data ...", persist="disk")
 def get_map_data(month=None, problem_type=None, limit=0):
-    """Load map data from MongoDB. limit=0 means no limit (all records)."""
+    """
+    Load map data. `comment` is truncated to 150 chars server-side (it is
+    only used in the hover tooltip) — cuts transfer size by ~80%.
+    """
     col  = get_mongo_collection()
-    filt = {}
+    match = {"latitude": {"$ne": None}, "longitude": {"$ne": None}}
     if month:
-        filt["month"] = int(month)
+        match["month"] = int(month)
     if problem_type and problem_type != "All":
-        filt["problem_type"] = problem_type
+        match["problem_type"] = problem_type
 
-    cursor = col.find(
-        filt,
-        {
+    pipeline = [
+        {"$match": match},
+        {"$project": {
             "_id": 0, "ticket_id": 1, "latitude": 1, "longitude": 1,
-            "problem_type": 1, "district": 1, "state_en": 1,
-            "comment": 1, "month": 1,
-        },
-    )
+            "problem_type": 1, "district": 1, "state_en": 1, "month": 1,
+            "comment": {"$substrCP": [{"$ifNull": ["$comment", ""]}, 0, 150]},
+        }},
+    ]
     if limit and limit > 0:
-        cursor = cursor.limit(limit)
-    return pd.DataFrame(list(cursor))
+        pipeline.append({"$limit": int(limit)})
+
+    return pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
 
 
 # ── Ad-hoc DuckDB filter ──────────────────────────────────────────────────────
