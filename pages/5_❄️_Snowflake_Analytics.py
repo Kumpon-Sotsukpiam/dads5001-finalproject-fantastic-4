@@ -37,7 +37,7 @@ def _sf_query(sql):
 
 
 # ── Cached loaders ────────────────────────────────────────────────────────────
-@st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...")
+@st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...", max_entries=1)
 def load_district_type():
     df = _sf_query("""
         SELECT year, month, district, problem_type, state_en,
@@ -47,10 +47,14 @@ def load_district_type():
     """)
     for c in ["ticket_count", "avg_resolution_minutes", "avg_star", "total_reopens", "month"]:
         df[c] = pd.to_numeric(df[c], errors="coerce")
+    # Shrink memory: repeated strings -> category (50-70% smaller in cache)
+    for c in ["district", "problem_type", "state_en"]:
+        if c in df.columns:
+            df[c] = df[c].astype("category")
     return df
 
 
-@st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...")
+@st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...", max_entries=1)
 def load_weekly():
     df = _sf_query("""
         SELECT year, week_num, week_start, problem_type, ticket_count, finished_count
@@ -63,7 +67,7 @@ def load_weekly():
     return df
 
 
-@st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...")
+@st.cache_data(ttl=3600, show_spinner="Querying Snowflake ...", max_entries=1)
 def load_district_summary():
     df = _sf_query("""
         SELECT district, total_tickets, finished, in_progress_count,

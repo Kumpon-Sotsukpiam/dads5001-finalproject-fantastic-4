@@ -26,6 +26,25 @@ def _agg(pipeline):
     return pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
 
 
+def _shrink(df, cat_cols=(), f32_cols=(), i16_cols=()):
+    """
+    Reduce DataFrame memory footprint WITHOUT losing data:
+    - repeated strings (district names, problem types) -> category dtype
+    - float64 -> float32, month/year -> int16
+    Typical saving: 50-70% — same rows, same values, smaller cache.
+    """
+    for c in cat_cols:
+        if c in df.columns:
+            df[c] = df[c].astype("category")
+    for c in f32_cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").astype("float32")
+    for c in i16_cols:
+        if c in df.columns:
+            df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype("int16")
+    return df
+
+
 # ── Server-side aggregations (MongoDB pipelines) ──────────────────────────────
 
 @st.cache_data(ttl=3600, show_spinner="Aggregating district summary ...", persist="disk")
@@ -140,7 +159,8 @@ def get_district_problem_heatmap():
 
 # ── MongoDB record-level queries (Explorer / Map) ─────────────────────────────
 
-@st.cache_data(ttl=3600, show_spinner="Fetching data from MongoDB ...", persist="disk")
+@st.cache_data(ttl=3600, show_spinner="Fetching data from MongoDB ...",
+               persist="disk", max_entries=2)
 def get_mongo_sample(month_min=None, month_max=None, limit=0):
     """
     Load records for the Explorer page.
@@ -172,10 +192,15 @@ def get_mongo_sample(month_min=None, month_max=None, limit=0):
         return df
     if "month" in df.columns:
         df["month"] = pd.to_numeric(df["month"], errors="coerce").fillna(0).astype(int)
-    return df
+    return _shrink(
+        df,
+        cat_cols=("district", "subdistrict", "problem_type", "state_en"),
+        f32_cols=("star", "duration_minutes_total", "longitude", "latitude"),
+    )
 
 
-@st.cache_data(ttl=3600, show_spinner="Loading map data ...", persist="disk")
+@st.cache_data(ttl=3600, show_spinner="Loading map data ...",
+               persist="disk", max_entries=2)
 def get_map_data(month=None, problem_type=None, limit=0):
     """
     Load map data. `comment` is truncated to 150 chars server-side (it is
@@ -199,7 +224,15 @@ def get_map_data(month=None, problem_type=None, limit=0):
     if limit and limit > 0:
         pipeline.append({"$limit": int(limit)})
 
-    return pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
+    df = pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
+    if df.empty:
+        return df
+    return _shrink(
+        df,
+        cat_cols=("district", "problem_type", "state_en"),
+        f32_cols=("latitude", "longitude"),
+        i16_cols=("month",),
+    )
 
 
 # ── Ad-hoc DuckDB filter ──────────────────────────────────────────────────────
