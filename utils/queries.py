@@ -17,20 +17,22 @@ from utils.db import get_mongo_collection
 
 # ── Raw data fetch from MongoDB ───────────────────────────────────────────────
 
-@st.cache_data(ttl=3600, show_spinner="Loading data from MongoDB ...")
+@st.cache_data(ttl=3600, show_spinner="Loading data from MongoDB ...", persist="disk")
 def _load_all_data():
     """
-    Pull all records from MongoDB (excluding embeddings).
-    Cached for 1 hour — this is the base dataset for all dashboard queries.
+    Pull records from MongoDB with an INCLUSION projection — only the 9 fields
+    the dashboard aggregations actually use. Excluding long text fields
+    (especially `comment`) cuts network transfer by roughly 70-80%.
+    Cached 1 h in memory + persisted to disk (survives app restarts).
     """
     col = get_mongo_collection()
     cursor = col.find(
         {},
         {
-            "_id": 0, "embedding": 0,
-            "photo": 0, "photo_after": 0,
-            "problemtype_tag": 0, "type_full": 0,
-            "coords": 0, "province": 0, "address": 0,
+            "_id": 0,
+            "district": 1, "problem_type": 1, "state_en": 1,
+            "star": 1, "duration_minutes_total": 1,
+            "month": 1, "year": 1, "week_start": 1, "count_reopen": 1,
         }
     )
     df = pd.DataFrame(list(cursor))
@@ -184,7 +186,7 @@ def get_district_problem_heatmap():
 
 # ── MongoDB direct queries ────────────────────────────────────────────────────
 
-@st.cache_data(ttl=3600, show_spinner="Fetching data from MongoDB ...")
+@st.cache_data(ttl=3600, show_spinner="Fetching data from MongoDB ...", persist="disk")
 def get_mongo_sample(limit=0):
     """Load records from MongoDB. limit=0 means no limit (all records)."""
     col = get_mongo_collection()
@@ -210,7 +212,7 @@ def get_mongo_sample(limit=0):
     return df
 
 
-@st.cache_data(ttl=3600, show_spinner="Loading map data ...")
+@st.cache_data(ttl=3600, show_spinner="Loading map data ...", persist="disk")
 def get_map_data(month=None, problem_type=None, limit=0):
     """Load map data from MongoDB. limit=0 means no limit (all records)."""
     col  = get_mongo_collection()

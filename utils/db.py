@@ -31,7 +31,10 @@ def get_mongo_collection():
     db_name  = _get_secret("MONGO_DB",         "dads5001")
     col_name = _get_secret("MONGO_COLLECTION", "bangkok_complaints")
 
-    client = MongoClient(uri, serverSelectionTimeoutMS=15000)
+    # zlib wire compression: shrinks payloads over the network (helps a lot
+    # for large text fields like `comment` when pulling many documents)
+    client = MongoClient(uri, serverSelectionTimeoutMS=15000,
+                         compressors="zlib")
     return client[db_name][col_name]
 
 
