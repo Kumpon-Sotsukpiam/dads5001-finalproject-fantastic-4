@@ -5,6 +5,7 @@ Geographic distribution of complaints.
 - Loads all data once (cached via get_map_data)
 - Cascading filters: selecting Month narrows Problem Type options
 - Default: show ALL records (no pre-filter)
+- Clicking a bar in the bar chart filters map + pie chart
 """
 
 import streamlit as st
@@ -80,7 +81,7 @@ with st.sidebar:
     type_options = ["All"] + available_types
     sel_type = st.selectbox("Problem Type", type_options)
 
-        # Filter 3: Status — multiselect with toggle buttons style
+    # Filter 3: Status — multiselect
     STATUS_LABELS = {
         "finished":    "🟢 Finished",
         "in_progress": "🟠 In Progress",
@@ -103,7 +104,7 @@ with st.sidebar:
 
     max_pts = st.slider("Max points on map", 500, 50000, 10000, step=500)
 
-# ── Apply filters ─────────────────────────────────────────────────────────────
+# ── Apply sidebar filters ─────────────────────────────────────────────────────
 df = df_all.copy()
 
 if sel_month is not None and "month" in df.columns:
@@ -115,10 +116,17 @@ if sel_type != "All" and "problem_type" in df.columns:
 if "state_en" in df.columns:
     df = df[df["state_en"].isin(sel_statuses)]
 
-total_filtered = len(df)
+# ── Apply bar chart click filter ──────────────────────────────────────────────
+clicked_type = st.session_state.get("clicked_type", None)
+
+df_display = df.copy()
+if clicked_type:
+    df_display = df_display[df_display["problem_type"] == clicked_type]
+
+total_filtered = len(df_display)
 
 # Limit points for map rendering only (doesn't affect charts)
-df_map = df.head(max_pts).copy()
+df_map = df_display.head(max_pts).copy()
 
 if df_map.empty:
     st.warning("No valid GPS coordinates in filtered data.")
@@ -179,8 +187,8 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("✅ What share of complaints get resolved here?")
-    if "state_en" in df.columns:
-        status_counts = df["state_en"].value_counts().reset_index()
+    if "state_en" in df_display.columns:
+        status_counts = df_display["state_en"].value_counts().reset_index()
         status_counts.columns = ["status", "count"]
         fig = px.pie(
             status_counts, values="count", names="status",
@@ -194,26 +202,64 @@ with col1:
             height=300, template=t,
         )
         st.plotly_chart(fig, use_container_width=True)
-        _fin = int((df["state_en"] == "finished").sum())
-        if len(df):
+        _fin = int((df_display["state_en"] == "finished").sum())
+        if len(df_display):
             st.caption("➡️ {:.1f}% of the {:,} selected complaints are finished.".format(
-                _fin / len(df) * 100, len(df)))
+                _fin / len(df_display) * 100, len(df_display)))
 
 with col2:
-    st.subheader("🏷️ Which problems dominate this selection?")
+    # แสดง label + badge ถ้ากำลัง filter อยู่
+    if clicked_type:
+        st.subheader("🏷️ Which problems dominate this selection?")
+        st.info("🔍 Filtering by: **{}**".format(clicked_type))
+    else:
+        st.subheader("🏷️ Which problems dominate this selection?")
+        st.caption("💡 Click a bar to filter the map and pie chart")
+
     if "problem_type" in df.columns:
+        # bar chart ใช้ df (ก่อน clicked_type filter) เพื่อแสดง top 10 เสมอ
         type_counts = df["problem_type"].value_counts().head(10).reset_index()
         type_counts.columns = ["type", "count"]
+
+        # highlight bar ที่ถูกเลือก
+        type_counts["color"] = type_counts["type"].apply(
+            lambda x: "#1f77b4" if x != clicked_type else "#FF6B35"
+        )
+
         fig2 = px.bar(
             type_counts, x="count", y="type", orientation="h",
-            color="count", color_continuous_scale="Blues", template=t,
+            color="color",
+            color_discrete_map="identity",
+            template=t,
             height=300, labels={"count": "Complaints", "type": ""},
         )
-        fig2.update_layout(template=t, coloraxis_showscale=False)
-        st.plotly_chart(fig2, use_container_width=True)
-        if not type_counts.empty:
+        fig2.update_layout(template=t, showlegend=False)
+
+        # รับ click event
+        selected = st.plotly_chart(
+            fig2,
+            use_container_width=True,
+            on_select="rerun",
+            key="bar_chart",
+        )
+
+        # ดึงค่าที่คลิ้ก
+        if selected and selected.get("selection", {}).get("points"):
+            pt = selected["selection"]["points"][0]
+            new_type = pt.get("y")  # bar แนวนอน → ค่าอยู่ที่ axis y
+            if new_type and new_type != clicked_type:
+                st.session_state["clicked_type"] = new_type
+                st.rerun()
+
+        if not type_counts.empty and not clicked_type:
             st.caption("➡️ Most common: \"{}\" ({:,} complaints).".format(
                 type_counts.iloc[0]["type"], type_counts.iloc[0]["count"]))
+
+    # ปุ่ม clear filter
+    if clicked_type:
+        if st.button("✖ Clear selection", key="clear_type"):
+            st.session_state["clicked_type"] = None
+            st.rerun()
 
 if total_filtered > max_pts:
     st.info(
@@ -228,14 +274,14 @@ st.divider()
 if st.session_state.get("ai_mode", False):
     st.subheader("🤖 AI Insight")
     if st.button("✨ Analyze current map data", use_container_width=True):
-        if not df.empty:
-            top_districts = df["district"].value_counts().head(5).to_dict() if "district" in df.columns else {}
-            top_types     = df["problem_type"].value_counts().head(5).to_dict() if "problem_type" in df.columns else {}
+        if not df_display.empty:
+            top_districts = df_display["district"].value_counts().head(5).to_dict() if "district" in df_display.columns else {}
+            top_types     = df_display["problem_type"].value_counts().head(5).to_dict() if "problem_type" in df_display.columns else {}
             context = (
                 "Filtered map data: {:,} complaints\n"
                 "Top 5 districts: {}\n"
                 "Top 5 problem types: {}"
-            ).format(len(df), top_districts, top_types)
+            ).format(len(df_display), top_districts, top_types)
             with st.spinner("Analyzing ..."):
                 insight = ai_insight(context,
                     "Analyze the geographic distribution of Bangkok complaints shown on this map. "
