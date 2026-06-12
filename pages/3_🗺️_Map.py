@@ -104,17 +104,19 @@ with st.sidebar:
     max_pts = st.slider("Max points on map", 500, 50000, 10000, step=500)
 
 # ── Apply filters ─────────────────────────────────────────────────────────────
-df = df_all.copy()
+# ── วางบนสุดของไฟล์ (หลัง import) ───────────────────────────────────────────
+@st.cache_data(show_spinner=False)
+def apply_filters(df: pd.DataFrame, sel_month, sel_type: str, sel_statuses: tuple):
+    result = df.copy()
+    if sel_month is not None and "month" in result.columns:
+        result = result[result["month"] == sel_month]
+    if sel_type != "All" and "problem_type" in result.columns:
+        result = result[result["problem_type"] == sel_type]
+    if "state_en" in result.columns:
+        result = result[result["state_en"].isin(sel_statuses)]
+    return result
 
-if sel_month is not None and "month" in df.columns:
-    df = df[df["month"] == sel_month]
-
-if sel_type != "All" and "problem_type" in df.columns:
-    df = df[df["problem_type"] == sel_type]
-
-if "state_en" in df.columns:
-    df = df[df["state_en"].isin(sel_statuses)]
-
+df = apply_filters(df_all, sel_month, sel_type, tuple(sorted(sel_statuses)))
 total_filtered = len(df)
 
 # Limit points for map rendering only (doesn't affect charts)
