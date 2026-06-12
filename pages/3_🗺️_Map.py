@@ -80,6 +80,27 @@ with st.sidebar:
     type_options = ["All"] + available_types
     sel_type = st.selectbox("Problem Type", type_options)
 
+        # Filter 3: Status — multiselect with toggle buttons style
+    STATUS_LABELS = {
+        "finished":    "🟢 Finished",
+        "in_progress": "🟠 In Progress",
+        "pending":     "🔴 Pending",
+        "other":       "⚪ Other",
+    }
+    if "state_en" in df_all.columns:
+        available_statuses = [s for s in STATUS_LABELS if s in df_all["state_en"].unique()]
+    else:
+        available_statuses = list(STATUS_LABELS.keys())
+
+    sel_statuses = st.multiselect(
+        "Status",
+        options=available_statuses,
+        default=available_statuses,
+        format_func=lambda s: STATUS_LABELS.get(s, s),
+    )
+    if not sel_statuses:          # guard: if user clears all, show all
+        sel_statuses = available_statuses
+
     max_pts = st.slider("Max points on map", 500, 50000, 10000, step=500)
 
 # ── Apply filters ─────────────────────────────────────────────────────────────
@@ -90,6 +111,9 @@ if sel_month is not None and "month" in df.columns:
 
 if sel_type != "All" and "problem_type" in df.columns:
     df = df[df["problem_type"] == sel_type]
+
+if "state_en" in df.columns:
+    df = df[df["state_en"].isin(sel_statuses)]
 
 total_filtered = len(df)
 
