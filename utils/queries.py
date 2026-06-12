@@ -20,10 +20,24 @@ import streamlit as st
 from utils.db import get_mongo_collection
 
 
+def _delist(df):
+    """
+    Some MongoDB documents may store fields as arrays (e.g. problem_type).
+    Lists are unhashable — they crash groupby/isin/astype('category') with
+    "TypeError: unhashable type: 'list'". Convert them to joined strings.
+    """
+    for c in df.columns:
+        if df[c].dtype == object:
+            df[c] = df[c].map(
+                lambda v: ", ".join(map(str, v)) if isinstance(v, list) else v
+            )
+    return df
+
+
 def _agg(pipeline):
     """Run an aggregation pipeline and return a DataFrame."""
     col = get_mongo_collection()
-    return pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
+    return _delist(pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True))))
 
 
 def _shrink(df, cat_cols=(), f32_cols=(), i16_cols=()):
@@ -35,7 +49,10 @@ def _shrink(df, cat_cols=(), f32_cols=(), i16_cols=()):
     """
     for c in cat_cols:
         if c in df.columns:
-            df[c] = df[c].astype("category")
+            try:
+                df[c] = df[c].astype("category")
+            except TypeError:
+                pass  # column contains unhashable values — leave as-is
     for c in f32_cols:
         if c in df.columns:
             df[c] = pd.to_numeric(df[c], errors="coerce").astype("float32")
@@ -187,7 +204,7 @@ def get_mongo_sample(month_min=None, month_max=None, limit=0):
     if limit and limit > 0:
         pipeline.append({"$limit": int(limit)})
 
-    df = pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
+    df = _delist(pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True))))
     if df.empty:
         return df
     if "month" in df.columns:
@@ -224,7 +241,7 @@ def get_map_data(month=None, problem_type=None, limit=0):
     if limit and limit > 0:
         pipeline.append({"$limit": int(limit)})
 
-    df = pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True)))
+    df = _delist(pd.DataFrame(list(col.aggregate(pipeline, allowDiskUse=True))))
     if df.empty:
         return df
     return _shrink(
