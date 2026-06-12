@@ -151,7 +151,10 @@ for _col, _default in [("state_en", "other"), ("comment", "")]:
     if _col not in df_map.columns:
         df_map[_col] = _default
 
-df_map["color"] = df_map["state_en"].apply(get_color)
+# state_en is a category dtype (memory optimization) — .apply() on a
+# Categorical tries to build new categories from the returned RGBA lists,
+# which are unhashable. Cast to str first so the result is a plain column.
+df_map["color"] = df_map["state_en"].astype(str).map(get_color)
 
 # ── pydeck map ────────────────────────────────────────────────────────────────
 df_map["comment_short"] = df_map["comment"].fillna("").astype(str).str[:150]
