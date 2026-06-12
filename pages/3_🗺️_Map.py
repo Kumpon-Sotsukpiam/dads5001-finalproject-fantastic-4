@@ -154,7 +154,7 @@ st.markdown("🟢 **Finished** &nbsp;&nbsp; 🟠 **In Progress** &nbsp;&nbsp; �
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("By Status")
+    st.subheader("✅ What share of complaints get resolved here?")
     if "state_en" in df.columns:
         status_counts = df["state_en"].value_counts().reset_index()
         status_counts.columns = ["status", "count"]
@@ -170,9 +170,13 @@ with col1:
             height=300, template=t,
         )
         st.plotly_chart(fig, use_container_width=True)
+        _fin = int((df["state_en"] == "finished").sum())
+        if len(df):
+            st.caption("➡️ {:.1f}% of the {:,} selected complaints are finished.".format(
+                _fin / len(df) * 100, len(df)))
 
 with col2:
-    st.subheader("By Problem Type (top 10)")
+    st.subheader("🏷️ Which problems dominate this selection?")
     if "problem_type" in df.columns:
         type_counts = df["problem_type"].value_counts().head(10).reset_index()
         type_counts.columns = ["type", "count"]
@@ -183,6 +187,9 @@ with col2:
         )
         fig2.update_layout(template=t, coloraxis_showscale=False)
         st.plotly_chart(fig2, use_container_width=True)
+        if not type_counts.empty:
+            st.caption("➡️ Most common: \"{}\" ({:,} complaints).".format(
+                type_counts.iloc[0]["type"], type_counts.iloc[0]["count"]))
 
 if total_filtered > max_pts:
     st.info(

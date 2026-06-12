@@ -94,7 +94,7 @@ python pipeline_mongo.py      # CSV → MongoDB
 python pipeline_snowflake.py  # MongoDB → Snowflake
 
 # 4. Launch the app
-streamlit run app.py
+streamlit run 🏠_Home.py
 ```
 
 **Credentials needed:** MongoDB Atlas URI · Snowflake account + RSA private key
@@ -104,7 +104,7 @@ Never commit `.env` or `rsa_key.p8`.
 ## 📂 Project Structure
 
 ```
-├── app.py                      # Home: hero, motivation, objective, story flow
+├── 🏠_Home.py                  # Home: hero, motivation, objective, story flow
 ├── pages/
 │   ├── 2_📊_Dashboard.py       # Non-AI analytics (MongoDB + DuckDB)
 │   ├── 3_🗺️_Map.py             # Geographic distribution (pydeck)

@@ -68,11 +68,12 @@ def _is_dark() -> bool:
 
 def _build_plotly_template(p: dict) -> go.layout.Template:
     t = go.layout.Template()
+    _font = "Inter, 'Noto Sans Thai', sans-serif"
     t.layout = go.Layout(
         paper_bgcolor=p["chart_paper"],
         plot_bgcolor=p["chart_plot"],
-        font=dict(family="Inter, sans-serif", color=p["chart_font"], size=12),
-        title=dict(font=dict(color=p["heading"], size=15, family="Inter, sans-serif")),
+        font=dict(family=_font, color=p["chart_font"], size=12),
+        title=dict(font=dict(color=p["heading"], size=15, family=_font)),
         xaxis=dict(
             gridcolor=p["chart_grid"], linecolor=p["chart_grid"],
             tickcolor=p["chart_tick"], tickfont=dict(color=p["chart_tick"]),
@@ -163,10 +164,10 @@ def inject_css():
 
     st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
     html, body, [class*="css"], .stApp {{
-        font-family: 'Inter', sans-serif !important;
+        font-family: 'Inter', 'Noto Sans Thai', sans-serif !important;
     }}
 
     {bg_css}

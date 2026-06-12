@@ -225,7 +225,7 @@ with col_r:
             labels={"reopen_pct": "Reopen Rate (%)", "month_label": "Month"},
             height=350,
         )
-        fig_rr.update_traces(line=dict(color="#EF553B", width=3), marker=dict(size=8))
+        fig_rr.update_traces(line=dict(color="#E74C3C", width=3), marker=dict(size=8))
         fig_rr.update_layout(template=t, yaxis_ticksuffix="%")
         st.plotly_chart(fig_rr, use_container_width=True)
     else:
@@ -244,13 +244,13 @@ if not df_weekly.empty:
     fig_wk = go.Figure()
     fig_wk.add_trace(go.Bar(
         x=wk["week_start"], y=wk["tickets"],
-        name="Total Tickets", marker_color="#636EFA", opacity=0.6,
+        name="Total Tickets", marker_color="#2E6CB8", opacity=0.6,
     ))
     fig_wk.add_trace(go.Scatter(
         x=wk["week_start"], y=wk["completion_pct"],
         name="Completion Rate (%)", yaxis="y2",
         mode="lines+markers",
-        line=dict(color="#00CC96", width=2),
+        line=dict(color="#27AE60", width=2),
     ))
     fig_wk.update_layout(template=t, 
         yaxis=dict(title="Tickets"),
@@ -453,6 +453,63 @@ with col_b:
         st.caption("Min. 50 tickets to qualify")
     else:
         st.info("No data.")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SECTION 6 — Key Findings (computed from the data above)
+# ══════════════════════════════════════════════════════════════════════════════
+st.header("📌 Key Findings")
+st.caption("Auto-computed from the full Jul–Dec dataset — what BMA should act on first.")
+
+if not df_summary.empty and not df_dt.empty:
+    _worst_d = df_summary.dropna(subset=["avg_satisfaction"]).nsmallest(1, "avg_satisfaction")
+    _busiest = df_summary.iloc[0]
+
+    _pt = df_dt.groupby("problem_type").agg(
+        hours=("avg_resolution_minutes", "mean"),
+        tickets=("ticket_count", "sum"),
+        reopens=("total_reopens", "sum"),
+    ).reset_index()
+    _pt = _pt[_pt["tickets"] >= 50]
+    _pt["hours"] = _pt["hours"] / 60
+    _pt["reopen_pct"] = _pt["reopens"] / _pt["tickets"] * 100
+    _slowest  = _pt.nlargest(1, "hours")
+    _reopened = _pt.nlargest(1, "reopen_pct")
+
+    findings = []
+    if not _busiest.empty:
+        findings.append(("🏘️ Highest volume", "{}".format(_busiest["district"]),
+                         "{:,.0f} tickets — biggest workload in the city".format(_busiest["total_tickets"])))
+    if not _worst_d.empty:
+        _w = _worst_d.iloc[0]
+        findings.append(("⭐ Lowest satisfaction", "{}".format(_w["district"]),
+                         "only {:.2f}/5 — citizens least happy here".format(_w["avg_satisfaction"])))
+    if not _slowest.empty:
+        _s = _slowest.iloc[0]
+        findings.append(("🐢 Slowest to resolve", "{}".format(_s["problem_type"]),
+                         "avg {:,.0f} hours (≈ {:.0f} days) per ticket".format(_s["hours"], _s["hours"] / 24)))
+    if not _reopened.empty:
+        _r = _reopened.iloc[0]
+        findings.append(("🔁 Most reopened", "{}".format(_r["problem_type"]),
+                         "{:.1f}% reopen rate — fixes don't stick".format(_r["reopen_pct"])))
+
+    f_cols = st.columns(len(findings))
+    for fc, (label, headline, detail) in zip(f_cols, findings):
+        fc.markdown("""
+        <div style="background:{card};border:1px solid {border};
+                    border-top:4px solid #F5A623;border-radius:10px;
+                    padding:0.9rem 1rem;height:150px;">
+            <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;
+                        letter-spacing:0.05em;color:{muted};">{label}</div>
+            <div style="font-size:1.05rem;font-weight:700;color:{heading};
+                        margin:0.3rem 0;">{headline}</div>
+            <div style="font-size:0.8rem;color:{text};line-height:1.45;">{detail}</div>
+        </div>
+        """.format(card=p["card"], border=p["border"], muted=p["text_muted"],
+                   heading=p["heading"], text=p["text"],
+                   label=label, headline=headline, detail=detail),
+        unsafe_allow_html=True)
+else:
+    st.info("Not enough data to compute key findings.")
 
 # ── AI Insight (AI mode only) ─────────────────────────────────────────────────
 st.divider()

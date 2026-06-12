@@ -1,9 +1,9 @@
 """
-app.py  –  Home / Landing page
+🏠_Home.py  –  Home / Landing page
 Bangkok Complaints Analytics  (Traffy Fondue, Jul–Dec 2025)
 
 Run:
-    streamlit run app.py
+    streamlit run 🏠_Home.py
 """
 
 import streamlit as st
