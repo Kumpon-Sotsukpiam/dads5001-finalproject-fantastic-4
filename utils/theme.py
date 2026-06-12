@@ -142,15 +142,10 @@ def inject_css():
     [data-testid="stHeader"] {{
         background-color: {p["bg"]} !important;
     }}
-    /* Text — main area only; sidebar colours are set in the sidebar section */
-    [data-testid="stMain"] p,
-    [data-testid="stMain"] span,
-    [data-testid="stMain"] label,
-    [data-testid="stMain"] li,
-    [data-testid="stMain"] td,
-    [data-testid="stMain"] th,
-    [data-testid="stMain"] [data-testid="stMarkdownContainer"] p,
-    [data-testid="stMain"] [data-testid="stMarkdownContainer"] li {{
+    /* Text — main area only; sidebar colours are set in the sidebar section.
+       :not(button *) excludes EVERYTHING inside buttons so button labels are
+       never painted dark, regardless of Streamlit's internal markup. */
+    [data-testid="stMain"] :is(p, span, label, li, td, th):not(button *):not(a *) {{
         color: {p["text"]} !important;
     }}
     /* Input / select backgrounds */
