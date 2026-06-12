@@ -48,10 +48,22 @@ DARK = {
 
 
 def _is_dark() -> bool:
+    """
+    Detect the active Streamlit theme.
+    st.context.theme exposes `.type` ("light" | "dark" | None) — NOT `.base`.
+    None can occur on the very first script run of a session; fall back to
+    the last known value so the UI doesn't flicker to the wrong theme.
+    """
     try:
-        return getattr(st.context.theme, "base", "light") == "dark"
+        theme_type = getattr(st.context.theme, "type", None)
     except Exception:
-        return st.session_state.get("_dark_mode", False)
+        theme_type = None
+
+    if theme_type in ("light", "dark"):
+        st.session_state["_dark_mode"] = theme_type == "dark"
+        return st.session_state["_dark_mode"]
+
+    return st.session_state.get("_dark_mode", False)
 
 
 def _build_plotly_template(p: dict) -> go.layout.Template:
@@ -102,59 +114,52 @@ def inject_css():
     navy   = "#1B3A6B"
     navy2  = "#2E6CB8"
 
-    if dark:
-        bg_css = f"""
-        /* Override Streamlit CSS variables for dark mode */
-        :root, .stApp {{
-            --background-color: {p["bg"]} !important;
-            --secondary-background-color: {p["card"]} !important;
-            --text-color: {p["text"]} !important;
-            color-scheme: dark;
-        }}
-        html, body {{
-            background-color: {p["bg"]} !important;
-            color: {p["text"]} !important;
-        }}
-        .stApp,
-        .stApp > div,
-        [data-testid="stAppViewContainer"],
-        [data-testid="stAppViewContainer"] > section,
-        [data-testid="stMain"],
-        [data-testid="stMain"] > div,
-        .main,
-        .block-container,
-        [data-testid="stVerticalBlock"],
-        [data-testid="stVerticalBlockBorderWrapper"] {{
-            background-color: {p["bg"]} !important;
-        }}
-        /* Text */
-        .stApp, .stApp p, .stApp span, .stApp label,
-        .stApp li, .stApp td, .stApp th,
-        [data-testid="stMarkdownContainer"] p,
-        [data-testid="stMarkdownContainer"] li {{
-            color: {p["text"]} !important;
-        }}
-        /* Input / select backgrounds */
-        [data-baseweb="select"] > div,
-        [data-baseweb="input"] > div,
-        [data-baseweb="textarea"] > div {{
-            background-color: {p["card"]} !important;
-            color: {p["text"]} !important;
-        }}
-        """
-    else:
-        bg_css = f"""
-        :root, .stApp {{
-            --background-color: {p["bg"]};
-            --secondary-background-color: {p["card"]};
-            --text-color: {p["text"]};
-        }}
-        .stApp p, .stApp span, .stApp label,
-        .stApp li, .stApp td, .stApp th,
-        [data-testid="stMarkdownContainer"] p {{
-            color: {p["text"]} !important;
-        }}
-        """
+    # Same explicit rules for BOTH themes — Streamlit does not repaint from
+    # CSS variables alone, so backgrounds must be set directly.
+    bg_css = f"""
+    :root, .stApp {{
+        --background-color: {p["bg"]} !important;
+        --secondary-background-color: {p["card"]} !important;
+        --text-color: {p["text"]} !important;
+        color-scheme: {"dark" if dark else "light"};
+    }}
+    html, body {{
+        background-color: {p["bg"]} !important;
+        color: {p["text"]} !important;
+    }}
+    .stApp,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"],
+    [data-testid="stMain"] > div,
+    .main,
+    [data-testid="stMain"] .block-container,
+    [data-testid="stMain"] [data-testid="stVerticalBlock"],
+    [data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] {{
+        background-color: {p["bg"]} !important;
+    }}
+    /* Top header bar */
+    [data-testid="stHeader"] {{
+        background-color: {p["bg"]} !important;
+    }}
+    /* Text — main area only; sidebar colours are set in the sidebar section */
+    [data-testid="stMain"] p,
+    [data-testid="stMain"] span,
+    [data-testid="stMain"] label,
+    [data-testid="stMain"] li,
+    [data-testid="stMain"] td,
+    [data-testid="stMain"] th,
+    [data-testid="stMain"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMain"] [data-testid="stMarkdownContainer"] li {{
+        color: {p["text"]} !important;
+    }}
+    /* Input / select backgrounds */
+    [data-baseweb="select"] > div,
+    [data-baseweb="input"] > div,
+    [data-baseweb="textarea"] > div {{
+        background-color: {p["card"]} !important;
+        color: {p["text"]} !important;
+    }}
+    """
 
     st.markdown(f"""
     <style>
@@ -176,6 +181,15 @@ def inject_css():
         background: {navy} !important;
         border-right: none !important;
     }}
+    /* Inner sidebar containers must be transparent so the navy shows through */
+    [data-testid="stSidebar"] > div,
+    [data-testid="stSidebarContent"],
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"],
+    [data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"],
+    [data-testid="stSidebarNav"],
+    [data-testid="stSidebarUserContent"] {{
+        background: transparent !important;
+    }}
     [data-testid="stSidebar"] > div {{ padding-top: 1.5rem; }}
     [data-testid="stSidebarNav"] a {{
         color: #B8CCE8 !important;
@@ -184,9 +198,17 @@ def inject_css():
         border-radius: 8px !important;
         padding: 0.4rem 0.8rem !important;
     }}
+    [data-testid="stSidebarNav"] a span {{
+        color: inherit !important;
+    }}
     [data-testid="stSidebarNav"] a:hover,
-    [data-testid="stSidebarNav"] a[aria-selected="true"] {{
+    [data-testid="stSidebarNav"] a[aria-selected="true"],
+    [data-testid="stSidebarNav"] a[aria-current="page"] {{
         background: rgba(245,166,35,0.2) !important;
+        color: {accent} !important;
+    }}
+    [data-testid="stSidebarNav"] a[aria-selected="true"] span,
+    [data-testid="stSidebarNav"] a[aria-current="page"] span {{
         color: {accent} !important;
     }}
     [data-testid="stSidebar"] label,
@@ -321,6 +343,22 @@ def inject_css():
     }}
 
     .stSpinner > div {{ border-top-color: {navy2} !important; }}
+
+    /* ── SIDEBAR FINAL OVERRIDES (must stay last — they beat the generic
+          caption/label rules above, which would otherwise paint sidebar
+          text with the dark main-area colours) ── */
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {{
+        color: #B8CCE8 !important;
+    }}
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] span,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {{
+        color: #FFFFFF !important;
+    }}
+    [data-testid="stSidebar"] [data-testid="stTooltipIcon"] svg {{
+        color: #B8CCE8 !important;
+        fill: #B8CCE8 !important;
+    }}
     </style>
     """, unsafe_allow_html=True)
 

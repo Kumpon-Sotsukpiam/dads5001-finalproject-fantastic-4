@@ -1,6 +1,6 @@
 .env
-.env.example
 venv/
 __pycache__/
-rsa_key.p8
-rsa_key.p8
+*.p8
+rsa_key.pub
+.streamlit/secrets.toml

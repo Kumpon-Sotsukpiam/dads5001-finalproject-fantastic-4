@@ -17,10 +17,12 @@ from utils.queries import (
 )
 from utils.rag import ai_insight
 from utils.theme import inject_css, get_template
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Dashboard", page_icon="📊", layout="wide")
 p = inject_css()
 t = get_template()
+ai_mode_toggle()
 st.title("📊 Analytics Dashboard")
 st.caption("Source: MongoDB + DuckDB · Data: Traffy Fondue Jul-Dec 2025")
 
@@ -41,8 +43,9 @@ if not district_summary.empty:
     total    = int(district_summary["total_tickets"].sum())
     finished = int(district_summary["finished"].sum())
     rate     = round(finished / total * 100, 1) if total else 0.0
-    avg_sat  = round(pd.to_numeric(district_summary["avg_satisfaction"],
-                                   errors="coerce").mean(), 2)
+    _sat_raw = pd.to_numeric(district_summary["avg_satisfaction"],
+                             errors="coerce").mean()
+    avg_sat  = round(_sat_raw, 2) if pd.notna(_sat_raw) else 0.0
 else:
     total = finished = 0
     rate  = avg_sat = 0.0

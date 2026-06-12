@@ -13,10 +13,12 @@ import pandas as pd
 from utils.db import get_snowflake_conn
 from utils.rag import ai_insight
 from utils.theme import inject_css, get_template
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Snowflake Analytics", page_icon="❄️", layout="wide")
 p = inject_css()
 t = get_template()
+ai_mode_toggle()
 st.title("❄️ Snowflake Deep-Dive Analytics")
 st.caption("Source: Snowflake warehouse · Pre-aggregated from 168,589 complaints · Traffy Fondue Jul–Dec 2025")
 

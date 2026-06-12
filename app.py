@@ -20,7 +20,7 @@ st.set_page_config(
 p = inject_css()  # returns active colour palette
 
 # ── Session state defaults ────────────────────────────────────────────────────
-# NOTE: do NOT set ai_mode here — widget key "ai_mode" owns it via ai_mode_toggle()
+# ai_mode is managed by ai_mode_toggle() (persistent key + widget-key sync)
 if "chat_history" not in st.session_state:
     st.session_state["chat_history"] = []
 
@@ -50,6 +50,44 @@ c1.metric("🎫 Total Tickets",     "168,589")
 c2.metric("🏘️ Districts Covered", "50")
 c3.metric("✅ Completion Rate",   "66.2%")
 c4.metric("⭐ Avg Satisfaction",  "3.8 / 5")
+
+st.divider()
+
+# ── Issues & Motivation / Objective ──────────────────────────────────────────
+col_m, col_o = st.columns(2)
+
+with col_m:
+    st.subheader("🚨 Issues & Motivation")
+    st.markdown(f"""
+    <div style="background:{p['card']};border:1px solid {p['border']};
+                border-left:4px solid #E74C3C;border-radius:10px;
+                padding:1rem 1.3rem;height:230px;">
+    <div style="color:{p['text']};font-size:0.88rem;line-height:1.7;">
+    Bangkok citizens file <b>thousands of complaints daily</b> via Traffy Fondue —
+    flooding, broken roads, noise, waste, and more. With 168,589 tickets across
+    50 districts in just six months, BMA faces three challenges:
+    <br>• <b>Where</b> are problems concentrated, and which districts underperform?
+    <br>• <b>Which</b> problem types are slow to resolve or keep reopening?
+    <br>• <b>How</b> can non-technical staff query this data without writing SQL?
+    </div></div>
+    """, unsafe_allow_html=True)
+
+with col_o:
+    st.subheader("🎯 Objective")
+    st.markdown(f"""
+    <div style="background:{p['card']};border:1px solid {p['border']};
+                border-left:4px solid #27AE60;border-radius:10px;
+                padding:1rem 1.3rem;height:230px;">
+    <div style="color:{p['text']};font-size:0.88rem;line-height:1.7;">
+    Build a <b>data-centric analytics app with an AI add-on</b> that helps
+    BMA prioritize public service delivery:
+    <br>• <b>Non-AI mode</b> — interactive dashboards, maps, and a raw-data
+    explorer powered by Pandas + DuckDB over MongoDB and Snowflake
+    <br>• <b>AI mode</b> — one-click AI insights on every page and a RAG
+    chatbot that answers questions in Thai or English
+    <br>• Deliver insights that turn 168K complaints into <b>actionable priorities</b>
+    </div></div>
+    """, unsafe_allow_html=True)
 
 st.divider()
 

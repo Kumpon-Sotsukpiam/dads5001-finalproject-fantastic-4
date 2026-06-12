@@ -15,10 +15,12 @@ import plotly.express as px
 from utils.queries import get_mongo_sample
 from utils.rag import ai_insight
 from utils.theme import inject_css, get_template
+from utils.ui import ai_mode_toggle
 
 st.set_page_config(page_title="Data Explorer", page_icon="🔍", layout="wide")
 p = inject_css()
 t = get_template()
+ai_mode_toggle()
 st.title("🔍 Data Explorer")
 st.caption("Source: MongoDB · In-memory DuckDB filtering · All records")
 
