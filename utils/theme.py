@@ -287,11 +287,18 @@ def inject_css():
         font-weight: 600 !important;
         padding: 0.5rem 1.4rem !important;
     }}
-    /* Button label lives in a nested <p>/<span> — must be set directly,
-       otherwise the main-area text rule paints it dark */
-    .stButton > button p, .stButton > button span,
-    [data-testid="stDownloadButton"] > button p,
-    [data-testid="stDownloadButton"] > button span {{
+    /* Button label lives in a nested <p>/<span>. The main-area text rule
+       ([data-testid="stMain"] [data-testid="stMarkdownContainer"] p) has
+       specificity (0,2,1) — these selectors must reach at least (0,3,1)
+       to win, hence the stacked attribute selectors. */
+    [data-testid="stMain"] [data-testid="stButton"] button [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMain"] .stButton button p,
+    [data-testid="stMain"] .stButton button span,
+    [data-testid="stMain"] [data-testid="stDownloadButton"] button [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMain"] [data-testid="stDownloadButton"] button p,
+    [data-testid="stMain"] [data-testid="stDownloadButton"] button span,
+    [data-testid="stMain"] [data-testid="stFormSubmitButton"] button p,
+    button[kind] [data-testid="stMarkdownContainer"] p {{
         color: #FFFFFF !important;
     }}
     .stButton > button:hover,
@@ -299,9 +306,12 @@ def inject_css():
         background: linear-gradient(135deg, {accent}, #E8941A) !important;
         color: {navy} !important;
     }}
-    .stButton > button:hover p, .stButton > button:hover span,
-    [data-testid="stDownloadButton"] > button:hover p,
-    [data-testid="stDownloadButton"] > button:hover span {{
+    [data-testid="stMain"] .stButton button:hover p,
+    [data-testid="stMain"] .stButton button:hover span,
+    [data-testid="stMain"] [data-testid="stButton"] button:hover [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMain"] [data-testid="stDownloadButton"] button:hover p,
+    [data-testid="stMain"] [data-testid="stDownloadButton"] button:hover span,
+    button[kind]:hover [data-testid="stMarkdownContainer"] p {{
         color: {navy} !important;
     }}
 
