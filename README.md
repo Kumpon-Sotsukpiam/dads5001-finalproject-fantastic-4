@@ -6,7 +6,7 @@ A data-centric Streamlit app with an AI add-on, analyzing **168,589 public compl
 from Bangkok's Traffy Fondue platform (July – December 2025) across all 50 districts.
 
 > 📹 **Demo video:** _[add link here]_
-> 🌐 **Live app:** _[add Streamlit Cloud link here]_
+> 🌐 **Live app:** [dads5001-finalproject-fantastic-4.streamlit.app](https://dads5001-finalproject-fantastic-4-zg4hptp4pvp6hyac7nwknp.streamlit.app)
 
 ---
 
