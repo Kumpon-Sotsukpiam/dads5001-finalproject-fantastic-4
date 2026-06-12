@@ -78,9 +78,10 @@ def text_search(query, top_k=TOP_K):
         if results:
             return results
 
-    # Step 3: Return a random sample so LLM can still answer general questions
-    results = list(col.find({}, projection, limit=top_k))
-    return [dict(d, score=0.0) for d in results]
+    # Step 3: nothing relevant found — return empty so the LLM clearly knows
+    # there is NO supporting data (never feed it unrelated random documents,
+    # which would invite fabricated answers)
+    return []
 
 
 @st.cache_data(ttl=3600, show_spinner=False)
@@ -153,8 +154,10 @@ def build_context(docs):
 
 SYSTEM_PROMPT = (
     "You are an urban analytics assistant for Bangkok Metropolitan Administration.\n"
-    "You help analyze public complaints submitted via Traffy Fondue (Jul-Dec 2025).\n"
+    "You answer questions about public complaints submitted via Traffy Fondue "
+    "(Jul-Dec 2025) — and ONLY about what is in the provided context.\n"
     "Answer in English or Thai based on the user's language.\n"
+    "\n"
     "You receive two kinds of context:\n"
     "  1. DATASET STATISTICS — accurate aggregates computed over ALL 168K records.\n"
     "     ALWAYS use these for questions about 'most', 'least', 'average', "
@@ -162,8 +165,17 @@ SYSTEM_PROMPT = (
     "  2. RETRIEVED DOCUMENTS — a small sample of individual complaints.\n"
     "     Use these only as concrete examples or for details; NEVER count or "
     "rank from them.\n"
-    "Be specific and data-driven — cite real numbers from the statistics.\n"
-    "If neither source contains enough information, say so clearly.\n"
+    "\n"
+    "STRICT GROUNDING RULES (must follow without exception):\n"
+    "- Every fact, number, district name, and problem type in your answer MUST "
+    "appear in the context above. Do not add anything from outside knowledge.\n"
+    "- NEVER guess, estimate, extrapolate, or fill gaps with assumptions.\n"
+    "- If the context does not contain the information needed, reply ONLY that "
+    "you don't know — in Thai: 'ขออภัย ไม่พบข้อมูลนี้ในชุดข้อมูล Traffy Fondue "
+    "(ก.ค.–ธ.ค. 2025)' or in English: 'Sorry, this information is not available "
+    "in the Traffy Fondue dataset (Jul-Dec 2025).' Do not add speculation.\n"
+    "- If the question is unrelated to Bangkok complaints, say it is outside "
+    "the scope of this dataset.\n"
 )
 
 
@@ -182,6 +194,9 @@ def ai_insight(context_text, prompt):
                 "You are an urban analytics assistant for Bangkok Metropolitan Administration.\n"
                 "Analyze the data summary provided and give concise, actionable insights.\n"
                 "Answer in the same language as the user's prompt (Thai or English).\n"
+                "STRICT: use ONLY facts and numbers that appear in the DATA section. "
+                "Never add outside knowledge, never guess or extrapolate. If the DATA "
+                "is insufficient for the TASK, say so instead of speculating.\n"
                 "Be specific — cite numbers, name districts or problem types.\n"
                 "Format your answer EXACTLY as:\n"
                 "1. One bold headline stating the single most important finding.\n"
@@ -222,7 +237,7 @@ def ask_rag(question, chat_history):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",   "content": user_message},
         ],
-        temperature=0.3,
+        temperature=0.0,   # deterministic, minimizes fabrication
         max_tokens=1024,
     )
     return response.choices[0].message.content, docs
