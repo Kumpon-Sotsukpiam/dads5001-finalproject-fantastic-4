@@ -83,6 +83,52 @@ def text_search(query, top_k=TOP_K):
     return [dict(d, score=0.0) for d in results]
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
+def _dataset_overview():
+    """
+    Compact, accurate dataset-level statistics (computed by DuckDB over ALL
+    records, cached 1 h). Prepended to every chatbot prompt so aggregate
+    questions ("which district has the most X?") are answered from real
+    counts — not inferred from the handful of retrieved documents.
+    """
+    from utils.queries import (
+        get_district_summary, get_top_problem_types, get_resolution_stats,
+    )
+    try:
+        ds = get_district_summary()
+        tp = get_top_problem_types(10)
+        rs = get_resolution_stats()
+    except Exception:
+        return ""
+
+    parts = []
+    if not ds.empty:
+        total    = int(ds["total_tickets"].sum())
+        finished = int(ds["finished"].sum())
+        parts.append(
+            "Overall: {:,} complaints, {:,} finished ({:.1f}%).".format(
+                total, finished, finished / total * 100 if total else 0))
+        top5 = ds.head(5)
+        parts.append("Top 5 districts by volume: " + "; ".join(
+            "{} ({:,.0f} tickets, {:.2f}/5 satisfaction)".format(
+                r["district"], r["total_tickets"], r["avg_satisfaction"])
+            for _, r in top5.iterrows()))
+        worst = ds.dropna(subset=["avg_satisfaction"]).nsmallest(3, "avg_satisfaction")
+        parts.append("Lowest satisfaction districts: " + "; ".join(
+            "{} ({:.2f}/5)".format(r["district"], r["avg_satisfaction"])
+            for _, r in worst.iterrows()))
+    if not tp.empty:
+        parts.append("Top 10 problem types by volume: " + "; ".join(
+            "{} ({:,.0f})".format(r["problem_type"], r["total"])
+            for _, r in tp.iterrows()))
+    if not rs.empty:
+        slow = rs.head(5)
+        parts.append("Slowest problem types to resolve: " + "; ".join(
+            "{} ({:,.0f} hrs avg)".format(r["problem_type"], r["avg_hours"])
+            for _, r in slow.iterrows()))
+    return "\n".join(parts)
+
+
 def build_context(docs):
     if not docs:
         return "No relevant documents found."
@@ -109,15 +155,24 @@ SYSTEM_PROMPT = (
     "You are an urban analytics assistant for Bangkok Metropolitan Administration.\n"
     "You help analyze public complaints submitted via Traffy Fondue (Jul-Dec 2025).\n"
     "Answer in English or Thai based on the user's language.\n"
-    "Base your answers on the CONTEXT provided. Be specific and data-driven.\n"
-    "If the context does not contain enough information, say so clearly.\n"
+    "You receive two kinds of context:\n"
+    "  1. DATASET STATISTICS — accurate aggregates computed over ALL 168K records.\n"
+    "     ALWAYS use these for questions about 'most', 'least', 'average', "
+    "rankings, or totals.\n"
+    "  2. RETRIEVED DOCUMENTS — a small sample of individual complaints.\n"
+    "     Use these only as concrete examples or for details; NEVER count or "
+    "rank from them.\n"
+    "Be specific and data-driven — cite real numbers from the statistics.\n"
+    "If neither source contains enough information, say so clearly.\n"
 )
 
 
+@st.cache_data(ttl=3600, show_spinner=False)
 def ai_insight(context_text, prompt):
     """
     One-shot AI insight from structured context (no retrieval).
     Used by Dashboard, Map, Explorer, Snowflake pages.
+    Cached: identical data + prompt returns instantly without re-calling the API.
     """
     client = get_groq_client()
     response = client.chat.completions.create(
@@ -127,7 +182,11 @@ def ai_insight(context_text, prompt):
                 "You are an urban analytics assistant for Bangkok Metropolitan Administration.\n"
                 "Analyze the data summary provided and give concise, actionable insights.\n"
                 "Answer in the same language as the user's prompt (Thai or English).\n"
-                "Be specific — cite numbers, name districts or problem types. Max 5 bullet points."
+                "Be specific — cite numbers, name districts or problem types.\n"
+                "Format your answer EXACTLY as:\n"
+                "1. One bold headline stating the single most important finding.\n"
+                "2. Up to 4 short bullet points, each citing a specific number.\n"
+                "3. One final line starting with 'Recommendation:' giving one concrete action."
             )},
             {"role": "user", "content": "DATA:\n{}\n\nTASK: {}".format(context_text, prompt)},
         ],
@@ -138,9 +197,10 @@ def ai_insight(context_text, prompt):
 
 
 def ask_rag(question, chat_history):
-    """Retrieve relevant complaints -> build context -> call Groq."""
-    docs    = text_search(question, TOP_K)
-    context = build_context(docs)
+    """Retrieve relevant complaints + dataset statistics -> call Groq."""
+    docs     = text_search(question, TOP_K)
+    context  = build_context(docs)
+    overview = _dataset_overview()
 
     history_text = ""
     for turn in chat_history[-6:]:
@@ -148,10 +208,12 @@ def ask_rag(question, chat_history):
         history_text += "{}: {}\n".format(role, turn["content"])
 
     user_message = (
-        "CONTEXT (retrieved from Bangkok complaints database):\n{}\n\n"
+        "DATASET STATISTICS (accurate, computed over all records):\n{}\n\n"
+        "RETRIEVED DOCUMENTS (sample of individual complaints):\n{}\n\n"
         "CONVERSATION HISTORY:\n{}"
         "User: {}"
-    ).format(context, history_text, question)
+    ).format(overview if overview else "(unavailable)", context,
+             history_text, question)
 
     client = get_groq_client()
     response = client.chat.completions.create(
