@@ -38,57 +38,7 @@ with st.spinner("Loading data ..."):
         st.error("Failed to load data: {}".format(e))
         st.stop()
 
-# ── KPI Row ───────────────────────────────────────────────────────────────────
-if not district_summary.empty:
-    total    = int(district_summary["total_tickets"].sum())
-    finished = int(district_summary["finished"].sum())
-    rate     = round(finished / total * 100, 1) if total else 0.0
-    _sat_raw = pd.to_numeric(district_summary["avg_satisfaction"],
-                             errors="coerce").mean()
-    avg_sat  = round(_sat_raw, 2) if pd.notna(_sat_raw) else 0.0
-else:
-    total = finished = 0
-    rate  = avg_sat = 0.0
-
-# ── Month-over-month deltas (computed from data, last vs previous month) ─────
-delta_tickets = delta_rate = delta_sat = None
-if not monthly_trend.empty:
-    _bm = (monthly_trend.assign(
-            ticket_count=pd.to_numeric(monthly_trend["ticket_count"], errors="coerce"))
-           .groupby("month")["ticket_count"].sum().sort_index())
-    if len(_bm) >= 2:
-        delta_tickets = "{:+,.0f} MoM".format(_bm.iloc[-1] - _bm.iloc[-2])
-
-    _sat = monthly_trend.dropna(subset=["avg_star"]).copy()
-    if not _sat.empty:
-        _sat["w"] = pd.to_numeric(_sat["ticket_count"], errors="coerce")
-        _sm = (_sat.groupby("month")
-               .apply(lambda g: (g["avg_star"] * g["w"]).sum() / g["w"].sum())
-               .sort_index())
-        if len(_sm) >= 2 and pd.notna(_sm.iloc[-1]) and pd.notna(_sm.iloc[-2]):
-            delta_sat = "{:+.2f} MoM".format(_sm.iloc[-1] - _sm.iloc[-2])
-
-if not weekly_trend.empty:
-    _wk = weekly_trend.copy()
-    _wk["week_start"] = pd.to_datetime(_wk["week_start"], errors="coerce")
-    _wk = _wk.dropna(subset=["week_start"])
-    if not _wk.empty:
-        _wm = _wk.groupby(_wk["week_start"].dt.month).agg(
-            t=("ticket_count", "sum"), f=("finished_count", "sum"))
-        _wm = (_wm["f"] / _wm["t"] * 100).sort_index()
-        if len(_wm) >= 2:
-            delta_rate = "{:+.1f}% MoM".format(_wm.iloc[-1] - _wm.iloc[-2])
-
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Total Tickets",       "{:,}".format(total),        delta=delta_tickets)
-c2.metric("Finished",            "{:,}".format(finished))
-c3.metric("Completion Rate",     "{}%".format(rate),          delta=delta_rate)
-c4.metric("Avg Satisfaction ⭐", "{:.2f} / 5".format(avg_sat), delta=delta_sat)
-
-st.divider()
-
-
-# ── Sidebar filters ───────────────────────────────────────────────────────────
+# ── Sidebar filters (defined BEFORE the KPIs so the cards react to them) ─────
 with st.sidebar:
     st.header("Filters")
     month_options = list(range(7, 13))
@@ -100,27 +50,49 @@ with st.sidebar:
     if not sel_months:
         sel_months = month_options
 
-    all_types = sorted(top_problems["problem_type"].dropna().tolist()) \
-        if not top_problems.empty else []
+    all_types = sorted(monthly_trend["problem_type"].dropna().unique().tolist()) \
+        if not monthly_trend.empty else []
     sel_types = st.multiselect(
         "Problem Types", all_types,
         default=[],
         placeholder="All types",
     )
-    # Empty = show all types
-    if not sel_types:
-        sel_types = all_types
+    # sel_types == [] means "all types" (no type filter applied)
 
-# ── Filter monthly trend ──────────────────────────────────────────────────────
-if not monthly_trend.empty and sel_types:
-    mt = monthly_trend[
-        monthly_trend["month"].isin(sel_months) &
-        monthly_trend["problem_type"].isin(sel_types)
-    ]
-elif not monthly_trend.empty:
+# ── Filtered slice — drives the KPI cards and the monthly trend chart ────────
+if not monthly_trend.empty:
     mt = monthly_trend[monthly_trend["month"].isin(sel_months)]
+    if sel_types:
+        mt = mt[mt["problem_type"].isin(sel_types)]
 else:
     mt = pd.DataFrame()
+
+# ── KPI Row — follows the sidebar filters ────────────────────────────────────
+if not mt.empty:
+    total    = int(pd.to_numeric(mt["ticket_count"], errors="coerce").sum())
+    finished = int(pd.to_numeric(mt.get("finished_count"), errors="coerce").sum()) \
+        if "finished_count" in mt.columns else 0
+    rate     = round(finished / total * 100, 1) if total else 0.0
+    # Correct WEIGHTED satisfaction: total stars / number of rated tickets
+    # (the old version averaged per-district averages, which over-weighted
+    #  small districts)
+    _ss = pd.to_numeric(mt.get("star_sum"),   errors="coerce").sum() \
+        if "star_sum" in mt.columns else 0.0
+    _sc = pd.to_numeric(mt.get("star_count"), errors="coerce").sum() \
+        if "star_count" in mt.columns else 0
+    avg_sat = round(_ss / _sc, 2) if _sc else 0.0
+else:
+    total = finished = 0
+    rate  = avg_sat = 0.0
+
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Total Tickets",       "{:,}".format(total))
+c2.metric("Finished",            "{:,}".format(finished))
+c3.metric("Completion Rate",     "{}%".format(rate))
+c4.metric("Avg Satisfaction ⭐", "{:.2f} / 5".format(avg_sat))
+st.caption("ตัวเลขทั้ง 4 การ์ดเปลี่ยนตาม filter เดือน/ประเภทปัญหาใน sidebar")
+
+st.divider()
 
 col_left, col_right = st.columns(2)
 
@@ -154,13 +126,16 @@ with col_left:
     else:
         st.info("No weekly data available.")
 
-# Chart 2: Top Problem Types
+# Chart 2: Top Problem Types — derived from the filtered slice so it follows
+# both the month and type filters (consistent with the KPI cards)
 with col_right:
     st.subheader("🏷️ What do citizens complain about most?")
-    if not top_problems.empty:
-        tp = top_problems.copy()
+    if not mt.empty:
+        tp = (mt.groupby("problem_type", observed=True)["ticket_count"]
+                .sum().reset_index()
+                .rename(columns={"ticket_count": "total"})
+                .nlargest(15, "total"))
         tp["total"] = pd.to_numeric(tp["total"], errors="coerce")
-        tp = tp[tp["problem_type"].isin(sel_types)]
         fig2 = px.bar(
             tp.sort_values("total"),
             x="total", y="problem_type", orientation="h",
@@ -234,7 +209,8 @@ with col3_r:
         rs = resolution_stats.copy()
         rs["avg_hours"] = pd.to_numeric(rs["avg_hours"], errors="coerce").round(1)
         rs = rs.dropna(subset=["avg_hours"])
-        rs = rs[rs["problem_type"].isin(sel_types)]
+        if sel_types:
+            rs = rs[rs["problem_type"].isin(sel_types)]
         fig5 = px.bar(
             rs.sort_values("avg_hours"),
             x="avg_hours", y="problem_type", orientation="h",

@@ -90,8 +90,14 @@ def get_monthly_trend():
         {"$group": {
             "_id": {"year": "$year", "month": "$month", "problem_type": "$problem_type"},
             "ticket_count":           {"$sum": 1},
+            "finished_count":         {"$sum": {"$cond": [{"$eq": ["$state_en", "finished"]}, 1, 0]}},
             "avg_resolution_minutes": {"$avg": "$duration_minutes_total"},
             "avg_star":               {"$avg": "$star"},
+            # star_sum / star_count enable a correctly WEIGHTED overall
+            # satisfaction average for any filter combination
+            "star_sum":               {"$sum": "$star"},
+            "star_count":             {"$sum": {"$cond": [
+                {"$in": [{"$type": "$star"}, ["double", "int", "long", "decimal"]]}, 1, 0]}},
         }},
         {"$sort": {"_id.year": 1, "_id.month": 1}},
     ])
