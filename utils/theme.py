@@ -278,10 +278,10 @@ def inject_css():
         font-weight: 700 !important;
     }}
 
-    /* ── BUTTONS ── */
+    /* ── BUTTONS (green campaign palette) ── */
     .stButton > button,
     [data-testid="stDownloadButton"] > button {{
-        background: linear-gradient(135deg, {navy}, {navy2}) !important;
+        background: linear-gradient(135deg, {green_dark}, {green_main}) !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 8px !important;
@@ -304,8 +304,8 @@ def inject_css():
     }}
     .stButton > button:hover,
     [data-testid="stDownloadButton"] > button:hover {{
-        background: linear-gradient(135deg, {accent}, #E8941A) !important;
-        color: {navy} !important;
+        background: linear-gradient(135deg, {green_leaf}, #9FDB63) !important;
+        color: #00451F !important;
     }}
     [data-testid="stMain"] .stButton button:hover p,
     [data-testid="stMain"] .stButton button:hover span,
@@ -313,7 +313,7 @@ def inject_css():
     [data-testid="stMain"] [data-testid="stDownloadButton"] button:hover p,
     [data-testid="stMain"] [data-testid="stDownloadButton"] button:hover span,
     button[kind]:hover [data-testid="stMarkdownContainer"] p {{
-        color: {navy} !important;
+        color: #00451F !important;
     }}
 
     /* ── EXPANDER ── */
