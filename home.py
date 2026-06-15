@@ -44,6 +44,21 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# ── Traffy Fondue overview ───────────────────────────────────────────────────
+st.subheader("🍲 What is Traffy Fondue?")
+st.markdown(f"""
+<div style="background:{p['card']};border:1px solid {p['border']};
+            border-left:4px solid #008A45;border-radius:10px;
+            padding:1rem 1.3rem;margin-bottom:1.5rem;">
+<div style="color:{p['text']};font-size:0.9rem;line-height:1.7;">
+Traffy Fondue is a civic issue reporting platform used by citizens, visitors,
+and public agencies to submit, track, and manage urban problems such as flooding,
+damaged roads, waste, broken lights, and other local service requests. Reports are
+routed to responsible organizations, helping city teams monitor issues and improve
+public service response with data.
+</div></div>
+""", unsafe_allow_html=True)
+
 # ── KPI cards ─────────────────────────────────────────────────────────────────
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("🎫 Total Tickets",     "168,589")
@@ -129,6 +144,22 @@ st.markdown(f"""
 <span style="color:{p['text']};font-size:0.9rem;font-family:'Inter',sans-serif;font-weight:500;">
 CSV files (Jul–Dec 2025) &nbsp;→&nbsp; Pandas + DuckDB &nbsp;→&nbsp; MongoDB Atlas &nbsp;→&nbsp; Snowflake &nbsp;→&nbsp; Streamlit + Plotly
 </span>
+<div style="color:{p['text_muted']};font-size:0.84rem;line-height:1.7;margin-top:0.9rem;">
+<b style="color:{p['text']};">1. Raw data ingestion:</b> monthly Traffy Fondue CSV files are loaded and standardized so dates,
+district names, status labels, coordinates, complaint types, and satisfaction fields can be analyzed consistently.
+<br>
+<b style="color:{p['text']};">2. Local processing:</b> Pandas handles cleaning and feature preparation, while DuckDB supports fast
+SQL-style exploration over the complaint records before they are sent to cloud storage.
+<br>
+<b style="color:{p['text']};">3. Operational storage:</b> MongoDB Atlas keeps flexible complaint documents for app-level filtering,
+record lookup, and raw-data exploration.
+<br>
+<b style="color:{p['text']};">4. Analytical warehouse:</b> Snowflake stores structured tables for heavier aggregation, including
+resolution time, reopen behavior, district scorecards, and service performance metrics.
+<br>
+<b style="color:{p['text']};">5. Visualization layer:</b> Streamlit renders the user interface, while Plotly turns the prepared data
+into interactive charts, maps, and drill-down views.
+</div>
 </div>
 """, unsafe_allow_html=True)
 
