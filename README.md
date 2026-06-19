@@ -167,10 +167,10 @@ streamlit run app.py
 
 | Student ID | Name | Responsibility |
 |---|---|---|
-| 6810422005 | Nanthiwat Tawilpri | _[Data pipeline & MongoDB]_ |
-| 6810422015 | Rachaphol Vongbuntoon | _[Snowflake & analytics pages]_ |
-| 6810422024 | Kumpon Sotsukpiam | _[AI integration & RAG]_ |
-| 6810422027 | Nutdanai Kaewhiran | _[Visualization & theming]_ |
+| 6810422005 | Nanthiwat Tawilpri | Data pipeline & MongoDB |
+| 6810422015 | Rachaphol Vongbuntoon | Snowflake & analytics pages |
+| 6810422024 | Kumpon Sotsukpiam | AI integration & RAG |
+| 6810422027 | Nutdanai Kaewhiran | Visualization & theming |
 
 ---
 
